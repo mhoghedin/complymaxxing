@@ -1,6 +1,8 @@
 public class ContractRenewalService {
     @TestVisible static IRenewalApi renewApi = new CpqRenewalApi();
 
+    public class ContractRenewalException extends Exception {}
+
     public static Map<String, List<Contract>> groupContracts(List<Contract> contracts) {
         Map<String, List<Contract>> groups = new Map<String, List<Contract>>();
         for (Contract c : contracts) {
@@ -58,6 +60,11 @@ public class ContractRenewalService {
             }
         } catch (System.QueryException e) {
             // CPQ not installed — skip quote re-parenting, deletion still proceeds
+        } catch (DmlException e) {
+            throw new ContractRenewalException(
+                'Failed to re-parent CPQ quote from opp ' + newOppId +
+                ' to ' + targetOppId + ': ' + e.getMessage()
+            );
         }
         delete new Opportunity(Id = newOppId);
     }

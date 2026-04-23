@@ -51,14 +51,18 @@ public class ContractRenewalScheduler implements Schedulable {
         System.enqueueJob(new ContractRenewalQueueable(groups, existingOpps, 0));
     }
 
+    // queryLimit bounds heap usage. For very high volumes (10k+ contracts/run),
+    // migrate the outer loop to a Database.Batchable.
     @TestVisible
     static List<Contract> queryContracts(ContractRenewalConfig config) {
+        Integer queryLimit = config.queryLimit;
         return [
             SELECT Id, AccountId, Expiration_Date__c, Renewal_Opportunity__c
             FROM Contract
             WHERE Status = :config.finalizedStatus
             AND SBQQ__RenewalQuoted__c = false
             AND Expiration_Date__c != null
+            LIMIT :queryLimit
         ];
     }
 }

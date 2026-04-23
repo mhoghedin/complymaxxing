@@ -7,6 +7,14 @@ private class ContractRenewalSchedulerTest {
         public Id renewContracts(List<Id> contractIds) { return returnOppId; }
     }
 
+    // Returns a different opp ID on each call — proves groups are processed separately
+    private class SequentialMockRenewalApi implements IRenewalApi {
+        private List<Id> returnIds;
+        private Integer callCount = 0;
+        SequentialMockRenewalApi(List<Id> returnIds) { this.returnIds = returnIds; }
+        public Id renewContracts(List<Id> contractIds) { return returnIds[callCount++]; }
+    }
+
     private static Account makeAccount() {
         Account a = new Account(Name = 'Test');
         insert a;
@@ -72,7 +80,7 @@ private class ContractRenewalSchedulerTest {
         }
     }
 
-    // --- Two groups — confirms grouping works across accounts ---
+    // --- Two groups — confirms each group is processed as an independent renewal ---
 
     @isTest
     static void execute_twoGroups_processesEachSeparately() {
@@ -87,8 +95,9 @@ private class ContractRenewalSchedulerTest {
         Contract c1 = makeContract(a1.Id, expDate);
         Contract c2 = makeContract(a2.Id, expDate);
 
-        // Use a mock that returns different opps per call
-        ContractRenewalService.renewApi = new MockRenewalApi(opp1.Id);
+        // Sequential mock returns opp1 on first call, opp2 on second.
+        // If grouping is working, c1 and c2 must end up on different renewal opps.
+        ContractRenewalService.renewApi = new SequentialMockRenewalApi(new List<Id>{ opp1.Id, opp2.Id });
         ContractRenewalConfig.forTest('Fully Executed');
 
         ContractRenewalScheduler.testContracts = new List<Contract>{
@@ -100,12 +109,16 @@ private class ContractRenewalSchedulerTest {
         new ContractRenewalScheduler().execute(null);
         Test.stopTest();
 
-        // Both contracts processed — exact opp assignment depends on mock order,
-        // just confirm both have a non-null renewal opp
-        List<Contract> updated = [SELECT Renewal_Opportunity__c FROM Contract WHERE Id IN :new List<Id>{c1.Id, c2.Id}];
-        for (Contract c : updated) {
-            System.assertNotEquals(null, c.Renewal_Opportunity__c, 'Contract should have a renewal opp set');
-        }
+        Contract updated1 = [SELECT Renewal_Opportunity__c FROM Contract WHERE Id = :c1.Id];
+        Contract updated2 = [SELECT Renewal_Opportunity__c FROM Contract WHERE Id = :c2.Id];
+
+        System.assertNotEquals(null, updated1.Renewal_Opportunity__c, 'c1 should have a renewal opp');
+        System.assertNotEquals(null, updated2.Renewal_Opportunity__c, 'c2 should have a renewal opp');
+        System.assertNotEquals(
+            updated1.Renewal_Opportunity__c,
+            updated2.Renewal_Opportunity__c,
+            'Two separate accounts must produce two separate renewal opps'
+        );
     }
 
     // --- Scheduling ---

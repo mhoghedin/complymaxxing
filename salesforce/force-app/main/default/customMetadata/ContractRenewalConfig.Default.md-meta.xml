@@ -13,4 +13,8 @@
         <field>Job_Cron__c</field>
         <value xsi:type="xsd:string">0 0 2 * * ?</value>
     </values>
+    <values>
+        <field>Query_Limit__c</field>
+        <value xsi:type="xsd:decimal">2000</value>
+    </values>
 </CustomMetadata>

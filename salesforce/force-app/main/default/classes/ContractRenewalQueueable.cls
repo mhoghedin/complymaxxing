@@ -1,7 +1,10 @@
-public class ContractRenewalQueueable implements Queueable {
+public class ContractRenewalQueueable implements Queueable, Database.AllowsCallouts {
     private List<List<Id>> groups;
     private List<Id> existingOppIds;
     private Integer index;
+
+    // Set true in tests that only want to exercise a single group without chaining
+    @TestVisible static Boolean disableChaining = false;
 
     public ContractRenewalQueueable(List<List<Id>> groups, List<Id> existingOppIds, Integer index) {
         this.groups = groups;
@@ -27,7 +30,7 @@ public class ContractRenewalQueueable implements Queueable {
         }
 
         Integer nextIndex = index + 1;
-        if (nextIndex < groups.size() && !Test.isRunningTest()) {
+        if (nextIndex < groups.size() && !disableChaining) {
             System.enqueueJob(new ContractRenewalQueueable(groups, existingOppIds, nextIndex));
         }
     }
