@@ -131,7 +131,7 @@
                                     </thead>
                                     <tbody>
                                         <template for:each={grp.lines} for:item="ln">
-                                            <tr key={ln.productName}>
+                                            <tr key={ln.lineKey}>
                                                 <td>{ln.productName}</td>
                                                 <td>{ln.siteName}</td>
                                                 <td>{ln.contractName}</td>
@@ -155,7 +155,7 @@
                         <lightning-button label="Back"                   onclick={goToStep2}/>
                         <lightning-button label="Choose Template →"       variant="brand"
                                           onclick={goToStep4}
-                                          disabled={isLoading}
+                                          disabled={cannotProceedToGenerate}
                                           class="slds-m-left_small"/>
                     </div>
                 </div>

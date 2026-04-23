@@ -93,11 +93,14 @@ export default class DocGenWizard extends LightningElement {
             groupByField: this.groupBy
         })
         .then(result => {
-            this.previewGroups = result.map(grp => ({
+            // lineKey uses group + line index — guarantees uniqueness even when
+            // multiple lines share the same product name across contracts or sites
+            this.previewGroups = result.map((grp, gi) => ({
                 ...grp,
                 groupTotalFormatted: fmt(grp.groupTotal),
-                lines: grp.lines.map(ln => ({
+                lines: grp.lines.map((ln, li) => ({
                     ...ln,
+                    lineKey: `g${gi}-l${li}`,
                     netPriceFormatted:  fmt(ln.netPrice),
                     listPriceFormatted: fmt(ln.listPrice)
                 }))
@@ -162,12 +165,13 @@ export default class DocGenWizard extends LightningElement {
     get isStep3() { return this.currentStep === '3'; }
     get isStep4() { return this.currentStep === '4'; }
 
-    get noContractsSelected()  { return this.selectedContractIds.length === 0; }
-    get noTemplateSelected()   { return !this.selectedTemplateId; }
-    get noGroupBySelected()    { return !this.groupBy; }
-    get noContracts()          { return this.contracts.length === 0; }
-    get selectedCount()        { return this.selectedContractIds.length; }
-    get noGroupOptions()       { return this.groupOptions.length === 0; }
+    get noContractsSelected()      { return this.selectedContractIds.length === 0; }
+    get noTemplateSelected()       { return !this.selectedTemplateId; }
+    get noGroupBySelected()        { return !this.groupBy; }
+    get noContracts()              { return this.contracts.length === 0; }
+    get selectedCount()            { return this.selectedContractIds.length; }
+    get noGroupOptions()           { return this.groupOptions.length === 0; }
+    get cannotProceedToGenerate()  { return this.isLoading || this.previewGroups.length === 0; }
 
     get grandTotalFormatted() {
         const total = this.previewGroups.reduce((sum, g) => sum + (g.groupTotal ?? 0), 0);

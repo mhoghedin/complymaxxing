@@ -1,6 +1,7 @@
 public class DocGenController {
 
-    // Returned to LWC for the grouping combobox — label from MasterLabel, value is the field API name
+    @TestVisible static final Integer MAX_SUBSCRIPTION_LINES = 2000;
+
     public class GroupOption {
         @AuraEnabled public String label;
         @AuraEnabled public String value;
@@ -49,8 +50,9 @@ public class DocGenController {
             List<Id> contractIds, String groupByField) {
 
         if (mockPreviewResult != null) return mockPreviewResult;
-        List<String> allGroupFields = getAllGroupingFields();
+        List<String> allGroupFields = validateAndGetGroupingFields(groupByField);
         List<SBQQ__Subscription__c> subs = DocGenService.querySubscriptions(contractIds, allGroupFields);
+        enforceLineLimit(subs.size());
         return DocGenService.normalizeAndGroup(subs, groupByField);
     }
 
@@ -58,7 +60,7 @@ public class DocGenController {
     public static String generateDocument(
             List<Id> contractIds, String groupByField, String templateId) {
 
-        List<String> allGroupFields = getAllGroupingFields();
+        List<String> allGroupFields = validateAndGetGroupingFields(groupByField);
         List<SBQQ__Subscription__c> subs = mockSubscriptions != null
             ? mockSubscriptions
             : DocGenService.querySubscriptions(contractIds, allGroupFields);
@@ -67,6 +69,8 @@ public class DocGenController {
             throw new AuraHandledException(
                 'No year-1 subscriptions found on the selected contracts.');
         }
+
+        enforceLineLimit(subs.size());
 
         Set<Id> accountIds = new Set<Id>();
         for (SBQQ__Subscription__c s : subs) {
@@ -89,17 +93,36 @@ public class DocGenController {
         }
     }
 
-    // Queries all CMT grouping field API names so the subscription SOQL includes them all
-    private static List<String> getAllGroupingFields() {
+    // Validates groupByField against CMT whitelist and returns all configured field names
+    // in a single query so the subscription SELECT includes every possible grouping field.
+    private static List<String> validateAndGetGroupingFields(String groupByField) {
         List<String> fields = new List<String>();
+        Boolean fieldFound  = false;
         for (DocGen_Group_Option__mdt opt : [
             SELECT Field_API_Name__c FROM DocGen_Group_Option__mdt
         ]) {
             if (String.isNotBlank(opt.Field_API_Name__c)) {
                 fields.add(opt.Field_API_Name__c);
+                if (opt.Field_API_Name__c == groupByField) {
+                    fieldFound = true;
+                }
             }
         }
+        if (!fieldFound) {
+            throw new AuraHandledException(
+                'Grouping option "' + groupByField +
+                '" is not configured in DocGen Group Option metadata.');
+        }
         return fields;
+    }
+
+    private static void enforceLineLimit(Integer count) {
+        if (count > MAX_SUBSCRIPTION_LINES) {
+            throw new AuraHandledException(
+                'Selection contains ' + count + ' subscription lines. ' +
+                'Maximum supported per document is ' + MAX_SUBSCRIPTION_LINES + '. ' +
+                'Please select fewer contracts.');
+        }
     }
 
     @TestVisible static List<DocGenGroupWrapper> mockPreviewResult;

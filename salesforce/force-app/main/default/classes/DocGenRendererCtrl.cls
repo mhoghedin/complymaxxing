@@ -57,8 +57,15 @@ public class DocGenRendererCtrl {
 
         if (sectionToField.isEmpty()) return;
 
-        // Build SELECT from CMT-defined fields only — no hardcoded CPQ field names
-        List<String> selectFields = new List<String>(sectionToField.values());
+        // Validate field names from CMT to the same standard used in subscription query
+        // (alphanumeric + underscore only) — consistent with DocGenService injection guard
+        List<String> selectFields = new List<String>();
+        for (String f : sectionToField.values()) {
+            if (String.isNotBlank(f) && f.replaceAll('[a-zA-Z0-9_]', '').length() == 0) {
+                selectFields.add(f);
+            }
+        }
+        if (selectFields.isEmpty()) return;
         String tid  = String.escapeSingleQuotes(templateId);
         String soql = 'SELECT ' + String.join(selectFields, ', ') +
                       ' FROM SBQQ__QuoteTemplate__c WHERE Id = \'' + tid + '\' LIMIT 1';
