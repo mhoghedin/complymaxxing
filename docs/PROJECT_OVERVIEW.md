@@ -2,7 +2,7 @@
 
 ## What We're Building
 
-A Salesforce CPQ subscription management and document generation platform.
+A Salesforce CPQ subscription management and document generation platform. Uses a "Contract per transaction" model (1 Opp = multiple Contract records). A nightly job automatically merges contracts by Account + expiration date into a single renewal opportunity, preserving CSM activity history.
 
 ## Goals
 
@@ -51,5 +51,8 @@ A Salesforce CPQ subscription management and document generation platform.
 
 | Date | Decision | Made By | Rationale |
 |---|---|---|---|
+| 2026-04-23 | Contract per transaction model (1 Opp = multiple Contracts) | Business | Align contract teams across orgs |
+| 2026-04-23 | Nightly job merges contracts by Account + Expiration_Date__c into one renewal opp | Claude Code / Architect | Avoids manual merge at renewal; preserves CSM activity on original opp |
+| 2026-04-23 | CPQ renewContracts → re-parent quote to existing opp → delete new opp | Claude Code | Keeps persistent renewal opp that CSMs log notes on months in advance |
 
 ## Open Questions
