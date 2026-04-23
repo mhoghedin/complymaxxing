@@ -1,0 +1,57 @@
+{
+  "name": "CPQ Quote Machine",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "features": {
+    "ghcr.io/devcontainers/features/azure-cli:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": false
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "17"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "salesforcedx-vscode-core.show-cli-success-msg": false
+      },
+      "extensions": [
+        "anthropic.claude-code",
+        "salesforce.salesforcedx-vscode",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-azuretools.vscode-azurecli",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  },
+  "postCreateCommand": "bash -lc 'python -m pip install --user -r azure-app/requirements.txt && npm install -g @salesforce/cli && (cd salesforce && npm install)'",
+  "postStartCommand": "echo \"\\nCPQ Quote Machine Codespace ready.\\n  Flask:        (cd azure-app && flask run --port 8080)\\n  Docker:       docker --version\\n  Salesforce:   (cd salesforce && sf org login web --alias devhub --set-default-dev-hub)\\n  LWC Tests:    (cd salesforce && npm run test:unit)\\n  GitHub:       gh auth status\\n\"",
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "Flask app",
+      "onAutoForward": "notify",
+      "visibility": "private"
+    }
+  },
+  "remoteUser": "vscode",
+  "containerEnv": {
+    "PYTHONUNBUFFERED": "1",
+    "FLASK_APP": "app.py",
+    "FLASK_ENV": "development"
+  },
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/vscode/.local/bin",
+    "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}",
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
+    "AZURE_STORAGE_CONNECTION_STRING": "${localEnv:AZURE_STORAGE_CONNECTION_STRING}",
+    "AZURE_CONTAINER_NAME": "${localEnv:AZURE_CONTAINER_NAME}"
+  }
+}
