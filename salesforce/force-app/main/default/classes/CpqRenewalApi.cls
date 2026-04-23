@@ -1,7 +1,5 @@
 public class CpqRenewalApi implements IRenewalApi {
-    // Calls the CPQ managed package renewal API, then reads the generated opp ID back
-    // from SBQQ__RenewalOpportunity__c. Queries the whole group — not just index 0 —
-    // since CPQ is not guaranteed to populate the field on every contract immediately.
+    // queries the whole group not just [0] — CPQ doesn't always populate every contract immediately
     public Id renewContracts(List<Id> contractIds) {
         SBQQ.ContractService.renewContracts(contractIds);
         List<Contract> renewed = [

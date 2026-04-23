@@ -3,7 +3,7 @@ public class ContractRenewalQueueable implements Queueable, Database.AllowsCallo
     private List<Id> existingOppIds;
     private Integer index;
 
-    // Set true in tests that only want to exercise a single group without chaining
+    // prevents Queueable chaining in tests
     @TestVisible static Boolean disableChaining = false;
 
     public ContractRenewalQueueable(List<List<Id>> groups, List<Id> existingOppIds, Integer index) {

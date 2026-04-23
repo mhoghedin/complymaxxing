@@ -13,9 +13,9 @@ export default class DocGenWizard extends LightningElement {
     @track currentStep         = '1';
     @track contracts           = [];
     @track selectedContractIds = [];
-    @track groupBy             = '';       // field API name, set once options load
-    @track groupByLabel        = '';       // display label for the selected option
-    @track groupOptions        = [];       // loaded from DocGen_Group_Option__mdt
+    @track groupBy             = '';   // field API name, set once options load
+    @track groupByLabel        = '';
+    @track groupOptions        = [];
     @track previewGroups       = [];
     @track templateOptions     = [];
     @track selectedTemplateId  = '';
@@ -51,7 +51,7 @@ export default class DocGenWizard extends LightningElement {
         getGroupByOptions()
             .then(result => {
                 this.groupOptions = result;
-                // Default to first option once loaded
+                // pick the first CMT option as the default
                 if (result.length > 0 && !this.groupBy) {
                     this.groupBy      = result[0].value;
                     this.groupByLabel = result[0].label;
@@ -60,7 +60,7 @@ export default class DocGenWizard extends LightningElement {
             .catch(err => { this.errorMessage = this.extractError(err); });
     }
 
-    /* ─── Step 1 handlers ───────────────────────────────────────── */
+    /* ─── Step 1 ────────────────────────────────────────────────── */
 
     handleSearch(event) {
         this.loadContracts(event.target.value);
@@ -73,7 +73,7 @@ export default class DocGenWizard extends LightningElement {
             : [...this.selectedContractIds, id];
     }
 
-    /* ─── Step 2 handlers ───────────────────────────────────────── */
+    /* ─── Step 2 ────────────────────────────────────────────────── */
 
     handleGroupByChange(event) {
         this.groupBy = event.detail.value;
@@ -93,8 +93,7 @@ export default class DocGenWizard extends LightningElement {
             groupByField: this.groupBy
         })
         .then(result => {
-            // lineKey uses group + line index — guarantees uniqueness even when
-            // multiple lines share the same product name across contracts or sites
+            // product names aren't unique across contracts — key by index instead
             this.previewGroups = result.map((grp, gi) => ({
                 ...grp,
                 groupTotalFormatted: fmt(grp.groupTotal),
@@ -114,7 +113,7 @@ export default class DocGenWizard extends LightningElement {
         });
     }
 
-    /* ─── Step 4 handlers ───────────────────────────────────────── */
+    /* ─── Step 4 ────────────────────────────────────────────────── */
 
     handleTemplateChange(event) {
         this.selectedTemplateId = event.detail.value;

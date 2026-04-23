@@ -15,8 +15,7 @@ public class ContractRenewalService {
         return groups;
     }
 
-    // Returns the existing renewal opp for a group, or null if this is the first run.
-    // Looks at contracts already processed in a prior job run — they have Renewal_Opportunity__c set.
+    // non-null Renewal_Opportunity__c means a prior run already created the opp for this group
     public static Id getExistingRenewalOpp(List<Contract> groupContracts) {
         for (Contract c : groupContracts) {
             if (c.Renewal_Opportunity__c != null) {
@@ -46,8 +45,7 @@ public class ContractRenewalService {
         }
     }
 
-    // Dynamic SOQL avoids compile errors in orgs where CPQ is not yet installed.
-    // In production with CPQ installed, this queries SBQQ__Quote__c normally.
+    // dynamic SOQL so this compiles without CPQ installed
     @TestVisible
     static void reparentQuote(Id newOppId, Id targetOppId) {
         try {
@@ -59,7 +57,7 @@ public class ContractRenewalService {
                 update quotes[0];
             }
         } catch (System.QueryException e) {
-            // CPQ not installed — skip quote re-parenting, deletion still proceeds
+            // no CPQ — skip re-parenting, opp deletion still runs below
         } catch (DmlException e) {
             throw new ContractRenewalException(
                 'Failed to re-parent CPQ quote from opp ' + newOppId +

@@ -93,8 +93,8 @@ public class DocGenController {
         }
     }
 
-    // Validates groupByField against CMT whitelist and returns all configured field names
-    // in a single query so the subscription SELECT includes every possible grouping field.
+    // one query: validates the incoming field is whitelisted AND collects all CMT
+    // fields so the subscription SELECT covers every possible grouping option
     private static List<String> validateAndGetGroupingFields(String groupByField) {
         List<String> fields = new List<String>();
         Boolean fieldFound  = false;

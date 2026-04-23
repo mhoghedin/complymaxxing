@@ -1,5 +1,5 @@
 public class ContractRenewalScheduler implements Schedulable {
-    // Injected in tests to bypass the CPQ-field SOQL query
+    // test injection — bypasses the CPQ-field SOQL
     @TestVisible static List<Contract> testContracts;
 
     public void execute(SchedulableContext ctx) {
@@ -11,8 +11,7 @@ public class ContractRenewalScheduler implements Schedulable {
 
         if (contracts.isEmpty()) return;
 
-        // Second query: find existing renewal opps for these account/date combos
-        // so we know which groups have already been partially processed
+        // find any groups already processed in a prior run
         Set<Id> accountIds = new Set<Id>();
         Set<Date> expirationDates = new Set<Date>();
         for (Contract c : contracts) {
@@ -51,8 +50,7 @@ public class ContractRenewalScheduler implements Schedulable {
         System.enqueueJob(new ContractRenewalQueueable(groups, existingOpps, 0));
     }
 
-    // queryLimit bounds heap usage. For very high volumes (10k+ contracts/run),
-    // migrate the outer loop to a Database.Batchable.
+    // LIMIT prevents heap overflow; go Batchable if volume ever hits 10k+
     @TestVisible
     static List<Contract> queryContracts(ContractRenewalConfig config) {
         Integer queryLimit = config.queryLimit;

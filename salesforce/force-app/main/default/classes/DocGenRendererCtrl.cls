@@ -41,9 +41,7 @@ public class DocGenRendererCtrl {
         }
     }
 
-    // Reads header/footer field names from DocGen_Template_Field__mdt, then queries
-    // the chosen CPQ template at runtime. Adding a new CMT record (e.g. Section = 'Header',
-    // Field_API_Name = 'Custom_Header__c') is all that's needed to switch fields — no code change.
+    // field names come from CMT — swapping CPQ package versions doesn't need a code deploy
     private void loadTemplateContent(String templateId, String account) {
         Map<String, String> sectionToField = new Map<String, String>();
         for (DocGen_Template_Field__mdt rec : [
@@ -57,8 +55,7 @@ public class DocGenRendererCtrl {
 
         if (sectionToField.isEmpty()) return;
 
-        // Validate field names from CMT to the same standard used in subscription query
-        // (alphanumeric + underscore only) — consistent with DocGenService injection guard
+        // same injection guard as DocGenService
         List<String> selectFields = new List<String>();
         for (String f : sectionToField.values()) {
             if (String.isNotBlank(f) && f.replaceAll('[a-zA-Z0-9_]', '').length() == 0) {
@@ -89,7 +86,7 @@ public class DocGenRendererCtrl {
                     (String) tmpl.get(footerField), mergeValues);
             }
         } catch (Exception e) {
-            // Field unavailable in this CPQ version — fallback header/footer rendered by VF
+            // CPQ field missing in this package version — VF fallback renders instead
             templateHeader = '';
             templateFooter = '';
         }

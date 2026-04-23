@@ -1,7 +1,7 @@
 public class DocGenService {
 
-    // Query all year-1 subscriptions. additionalFields are CMT-defined grouping fields
-    // added to the SELECT so sub.get(fieldApiName) works for any CMT option.
+    // additionalFields get merged into the SELECT so sub.get(fieldName) works
+    // for any CMT-defined grouping option without a code change
     public static List<SBQQ__Subscription__c> querySubscriptions(
             List<Id> contractIds, List<String> additionalFields) {
 
@@ -17,7 +17,7 @@ public class DocGenService {
 
         if (additionalFields != null) {
             for (String f : additionalFields) {
-                // Field API names: alphanumeric + underscore only — guard against injection
+                // alphanumeric + underscore only — blocks injection from CMT
                 if (String.isNotBlank(f) && f.replaceAll('[a-zA-Z0-9_]', '').length() == 0) {
                     fields.add(f);
                 }
@@ -34,7 +34,6 @@ public class DocGenService {
         return Database.query(soql);
     }
 
-    // Group and normalize subscriptions. groupByField is the Subscription field API name.
     public static List<DocGenGroupWrapper> normalizeAndGroup(
             List<SBQQ__Subscription__c> subs, String groupByField) {
 
@@ -64,14 +63,13 @@ public class DocGenService {
         return result;
     }
 
-    // Insert DocGen_Request__c + DocGen_Line__c staging records. Returns request Id.
     public static Id buildStagingRecord(
             List<Id> contractIds, List<DocGenGroupWrapper> groups,
             String groupBy, Id templateId) {
 
         DocGen_Request__c req = new DocGen_Request__c(
-            Group_By__c    = groupBy,
-            Template_Id__c = String.valueOf(templateId),
+            Group_By__c     = groupBy,
+            Template_Id__c  = String.valueOf(templateId),
             Contract_Ids__c = JSON.serialize(contractIds),
             Requested_By__c = UserInfo.getUserId(),
             Created_At__c   = Datetime.now()
@@ -83,16 +81,16 @@ public class DocGenService {
         for (DocGenGroupWrapper grp : groups) {
             for (DocGenLineWrapper ln : grp.lines) {
                 lines.add(new DocGen_Line__c(
-                    Request__c      = req.Id,
-                    Group_Label__c  = grp.groupLabel,
-                    Sort_Order__c   = sortOrder++,
-                    Product_Name__c = ln.productName,
-                    Quantity__c     = ln.quantity,
-                    Net_Price__c    = ln.netPrice,
-                    List_Price__c   = ln.listPrice,
-                    Start_Date__c   = ln.startDate,
-                    End_Date__c     = ln.endDate,
-                    Site_Name__c    = ln.siteName,
+                    Request__c       = req.Id,
+                    Group_Label__c   = grp.groupLabel,
+                    Sort_Order__c    = sortOrder++,
+                    Product_Name__c  = ln.productName,
+                    Quantity__c      = ln.quantity,
+                    Net_Price__c     = ln.netPrice,
+                    List_Price__c    = ln.listPrice,
+                    Start_Date__c    = ln.startDate,
+                    End_Date__c      = ln.endDate,
+                    Site_Name__c     = ln.siteName,
                     Contract_Name__c = ln.contractName
                 ));
             }
@@ -101,7 +99,6 @@ public class DocGenService {
         return req.Id;
     }
 
-    // Read staging lines back into grouped wrappers for VF rendering
     public static List<DocGenGroupWrapper> loadGroupsFromStaging(Id requestId) {
         List<DocGen_Line__c> lines = [
             SELECT Group_Label__c, Sort_Order__c, Product_Name__c,
@@ -144,18 +141,15 @@ public class DocGenService {
         return result;
     }
 
-    // Replace common CPQ merge field patterns with real values from our data
     public static String substituteMergeFields(String html, Map<String, String> values) {
         if (String.isBlank(html)) return '';
         String result = html;
         for (String token : values.keySet()) {
-            String val = values.get(token) != null ? values.get(token) : '';
-            result = result.replace(token, val);
+            result = result.replace(token, values.get(token) != null ? values.get(token) : '');
         }
         return result;
     }
 
-    // Render the VF page to PDF, save as ContentVersion, link to each contract
     public static String renderAndSave(Id requestId, List<Id> contractIds, String accountName) {
         PageReference pdfPage = Page.DocGenRenderer;
         pdfPage.getParameters().put('requestId', requestId);
@@ -165,9 +159,9 @@ public class DocGenService {
             : pdfPage.getContent();
 
         ContentVersion cv = new ContentVersion(
-            Title         = 'Subscription Summary — ' + accountName + ' — ' + Date.today().format(),
-            PathOnClient  = 'DocGen_SubscriptionSummary.pdf',
-            VersionData   = pdfContent,
+            Title          = 'Subscription Summary — ' + accountName + ' — ' + Date.today().format(),
+            PathOnClient   = 'DocGen_SubscriptionSummary.pdf',
+            VersionData    = pdfContent,
             IsMajorVersion = true
         );
         insert cv;
@@ -187,7 +181,7 @@ public class DocGenService {
         return '/sfc/servlet.shepherd/document/download/' + cv.Id;
     }
 
-    // Delete staging records — always called in a finally block
+    // always call in a finally block — never skip cleanup
     public static void cleanupStaging(Id requestId) {
         if (requestId == null) return;
         delete [SELECT Id FROM DocGen_Request__c WHERE Id = :requestId];
