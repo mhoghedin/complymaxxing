@@ -1,13 +1,9 @@
 import { LightningElement, track } from 'lwc';
 import getAvailableTemplates  from '@salesforce/apex/DocGenController.getAvailableTemplates';
+import getGroupByOptions       from '@salesforce/apex/DocGenController.getGroupByOptions';
 import getContracts            from '@salesforce/apex/DocGenController.getContracts';
 import getSubscriptionPreview  from '@salesforce/apex/DocGenController.getSubscriptionPreview';
 import generateDocument        from '@salesforce/apex/DocGenController.generateDocument';
-
-const GROUP_BY_OPTIONS = [
-    { label: 'Group by Site (SiteNamelabel__c)', value: 'Site'    },
-    { label: 'Group by Product',                 value: 'Product' }
-];
 
 const fmt = (val) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val ?? 0);
@@ -17,7 +13,9 @@ export default class DocGenWizard extends LightningElement {
     @track currentStep         = '1';
     @track contracts           = [];
     @track selectedContractIds = [];
-    @track groupBy             = 'Site';
+    @track groupBy             = '';       // field API name, set once options load
+    @track groupByLabel        = '';       // display label for the selected option
+    @track groupOptions        = [];       // loaded from DocGen_Group_Option__mdt
     @track previewGroups       = [];
     @track templateOptions     = [];
     @track selectedTemplateId  = '';
@@ -25,13 +23,12 @@ export default class DocGenWizard extends LightningElement {
     @track isLoading           = false;
     @track errorMessage        = '';
 
-    groupByOptions = GROUP_BY_OPTIONS;
-
     /* ─── Lifecycle ─────────────────────────────────────────────── */
 
     connectedCallback() {
         this.loadContracts('');
         this.loadTemplates();
+        this.loadGroupOptions();
     }
 
     /* ─── Data loading ──────────────────────────────────────────── */
@@ -50,6 +47,19 @@ export default class DocGenWizard extends LightningElement {
             .catch(err => { this.errorMessage = this.extractError(err); });
     }
 
+    loadGroupOptions() {
+        getGroupByOptions()
+            .then(result => {
+                this.groupOptions = result;
+                // Default to first option once loaded
+                if (result.length > 0 && !this.groupBy) {
+                    this.groupBy      = result[0].value;
+                    this.groupByLabel = result[0].label;
+                }
+            })
+            .catch(err => { this.errorMessage = this.extractError(err); });
+    }
+
     /* ─── Step 1 handlers ───────────────────────────────────────── */
 
     handleSearch(event) {
@@ -57,19 +67,18 @@ export default class DocGenWizard extends LightningElement {
     }
 
     handleContractToggle(event) {
-        const id  = event.currentTarget.dataset.id;
-        const idx = this.selectedContractIds.indexOf(id);
-        if (idx >= 0) {
-            this.selectedContractIds = this.selectedContractIds.filter(x => x !== id);
-        } else {
-            this.selectedContractIds = [...this.selectedContractIds, id];
-        }
+        const id = event.currentTarget.dataset.id;
+        this.selectedContractIds = this.selectedContractIds.includes(id)
+            ? this.selectedContractIds.filter(x => x !== id)
+            : [...this.selectedContractIds, id];
     }
 
     /* ─── Step 2 handlers ───────────────────────────────────────── */
 
     handleGroupByChange(event) {
         this.groupBy = event.detail.value;
+        const match = this.groupOptions.find(o => o.value === this.groupBy);
+        this.groupByLabel = match ? match.label : '';
     }
 
     /* ─── Step 3 — preview ──────────────────────────────────────── */
@@ -80,8 +89,8 @@ export default class DocGenWizard extends LightningElement {
         this.errorMessage = '';
 
         getSubscriptionPreview({
-            contractIds: this.selectedContractIds,
-            groupBy:     this.groupBy
+            contractIds:  this.selectedContractIds,
+            groupByField: this.groupBy
         })
         .then(result => {
             this.previewGroups = result.map(grp => ({
@@ -113,9 +122,9 @@ export default class DocGenWizard extends LightningElement {
         this.errorMessage = '';
 
         generateDocument({
-            contractIds: this.selectedContractIds,
-            groupBy:     this.groupBy,
-            templateId:  this.selectedTemplateId
+            contractIds:  this.selectedContractIds,
+            groupByField: this.groupBy,
+            templateId:   this.selectedTemplateId
         })
         .then(url => {
             this.downloadUrl = url;
@@ -153,10 +162,12 @@ export default class DocGenWizard extends LightningElement {
     get isStep3() { return this.currentStep === '3'; }
     get isStep4() { return this.currentStep === '4'; }
 
-    get noContractsSelected() { return this.selectedContractIds.length === 0; }
-    get noTemplateSelected()  { return !this.selectedTemplateId; }
-    get noContracts()         { return this.contracts.length === 0; }
-    get selectedCount()       { return this.selectedContractIds.length; }
+    get noContractsSelected()  { return this.selectedContractIds.length === 0; }
+    get noTemplateSelected()   { return !this.selectedTemplateId; }
+    get noGroupBySelected()    { return !this.groupBy; }
+    get noContracts()          { return this.contracts.length === 0; }
+    get selectedCount()        { return this.selectedContractIds.length; }
+    get noGroupOptions()       { return this.groupOptions.length === 0; }
 
     get grandTotalFormatted() {
         const total = this.previewGroups.reduce((sum, g) => sum + (g.groupTotal ?? 0), 0);

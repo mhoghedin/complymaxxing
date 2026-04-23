@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Section__c</fullName>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>Section</label>
+    <length>50</length>
+    <type>Text</type>
+    <description>Role of this field in the document. Values: Header, Footer</description>
+</CustomField>

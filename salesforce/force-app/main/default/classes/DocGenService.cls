@@ -1,33 +1,49 @@
 public class DocGenService {
 
-    // Query all year-1 subscriptions from selected contracts (SegmentIndex__c = 1)
-    public static List<SBQQ__Subscription__c> querySubscriptions(List<Id> contractIds) {
-        return [
-            SELECT Id, SBQQ__ProductName__c, SBQQ__Product__c,
-                   SBQQ__Quantity__c, SBQQ__CustomerPrice__c, SBQQ__RegularPrice__c,
-                   SBQQ__StartDate__c, SBQQ__EndDate__c,
-                   SiteNamelabel__c, SegmentIndex__c,
-                   SBQQ__Contract__r.Name,
-                   SBQQ__Contract__r.AccountId,
-                   SBQQ__Contract__r.Account.Name
-            FROM SBQQ__Subscription__c
-            WHERE SBQQ__Contract__c IN :contractIds
-            AND SegmentIndex__c = 1
-            ORDER BY SiteNamelabel__c, SBQQ__ProductName__c
-        ];
+    // Query all year-1 subscriptions. additionalFields are CMT-defined grouping fields
+    // added to the SELECT so sub.get(fieldApiName) works for any CMT option.
+    public static List<SBQQ__Subscription__c> querySubscriptions(
+            List<Id> contractIds, List<String> additionalFields) {
+
+        Set<String> fields = new Set<String>{
+            'Id', 'SBQQ__ProductName__c', 'SBQQ__Product__c',
+            'SBQQ__Quantity__c', 'SBQQ__CustomerPrice__c', 'SBQQ__RegularPrice__c',
+            'SBQQ__StartDate__c', 'SBQQ__EndDate__c',
+            'SiteNamelabel__c', 'SegmentIndex__c',
+            'SBQQ__Contract__r.Name',
+            'SBQQ__Contract__r.AccountId',
+            'SBQQ__Contract__r.Account.Name'
+        };
+
+        if (additionalFields != null) {
+            for (String f : additionalFields) {
+                // Field API names: alphanumeric + underscore only — guard against injection
+                if (String.isNotBlank(f) && f.replaceAll('[a-zA-Z0-9_]', '').length() == 0) {
+                    fields.add(f);
+                }
+            }
+        }
+
+        String soql =
+            'SELECT ' + String.join(new List<String>(fields), ', ') +
+            ' FROM SBQQ__Subscription__c' +
+            ' WHERE SBQQ__Contract__c IN :contractIds' +
+            ' AND SegmentIndex__c = 1' +
+            ' ORDER BY SiteNamelabel__c, SBQQ__ProductName__c';
+
+        return Database.query(soql);
     }
 
-    // Group and normalize subscriptions. groupBy: 'Site' or 'Product'
+    // Group and normalize subscriptions. groupByField is the Subscription field API name.
     public static List<DocGenGroupWrapper> normalizeAndGroup(
-            List<SBQQ__Subscription__c> subs, String groupBy) {
+            List<SBQQ__Subscription__c> subs, String groupByField) {
 
         Map<String, DocGenGroupWrapper> groupMap = new Map<String, DocGenGroupWrapper>();
         List<String> groupOrder = new List<String>();
 
         for (SBQQ__Subscription__c sub : subs) {
-            String key = groupBy == 'Site'
-                ? (String.isBlank(sub.SiteNamelabel__c) ? 'Unassigned' : sub.SiteNamelabel__c)
-                : (String.isBlank(sub.SBQQ__ProductName__c) ? 'Other' : sub.SBQQ__ProductName__c);
+            String rawValue = (String) sub.get(groupByField);
+            String key = String.isBlank(rawValue) ? 'Ungrouped' : rawValue;
 
             if (!groupMap.containsKey(key)) {
                 groupMap.put(key, new DocGenGroupWrapper(key));

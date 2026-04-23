@@ -75,18 +75,33 @@
             <!-- ══════════════════════════════════════════ -->
             <template lwc:if={isStep2}>
                 <div class="slds-m-top_medium">
-                    <lightning-radio-group
-                        name="docGenGroupBy"
-                        label="Group subscriptions by"
-                        options={groupByOptions}
-                        value={groupBy}
-                        type="radio"
-                        onchange={handleGroupByChange}/>
+                    <template lwc:if={noGroupOptions}>
+                        <div class="slds-notify slds-notify_alert slds-alert_warning" role="alert">
+                            <lightning-icon icon-name="utility:warning" size="x-small"
+                                           class="slds-m-right_x-small"/>
+                            No grouping options configured. Add records to the
+                            <strong>DocGen Group Option</strong> Custom Metadata Type.
+                        </div>
+                    </template>
+                    <template lwc:else>
+                        <!-- Combobox scales cleanly to any number of CMT-defined options -->
+                        <lightning-combobox
+                            name="docGenGroupBy"
+                            label="Group subscriptions by"
+                            placeholder="Select a grouping…"
+                            options={groupOptions}
+                            value={groupBy}
+                            onchange={handleGroupByChange}/>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                            Options are configured in the DocGen Group Option Custom Metadata Type.
+                        </p>
+                    </template>
 
                     <div class="slds-m-top_medium">
                         <lightning-button label="Back"          onclick={goToStep1}/>
                         <lightning-button label="Preview Data"  variant="brand"
                                           onclick={loadPreview}
+                                          disabled={noGroupBySelected}
                                           class="slds-m-left_small"/>
                     </div>
                 </div>
