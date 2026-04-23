@@ -1,0 +1,205 @@
+<template>
+    <lightning-card title="Subscription Document Generator" icon-name="standard:contract">
+        <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+
+            <!-- Progress indicator -->
+            <lightning-progress-indicator current-step={currentStep} type="base" has-error="false">
+                <lightning-progress-step label="Select Contracts" value="1"></lightning-progress-step>
+                <lightning-progress-step label="Grouping"         value="2"></lightning-progress-step>
+                <lightning-progress-step label="Preview"          value="3"></lightning-progress-step>
+                <lightning-progress-step label="Generate"         value="4"></lightning-progress-step>
+            </lightning-progress-indicator>
+
+            <!-- Error banner -->
+            <template lwc:if={errorMessage}>
+                <div class="slds-notify slds-notify_alert slds-alert_error slds-m-top_small" role="alert">
+                    <lightning-icon icon-name="utility:error" alternative-text="Error" size="x-small"
+                                   class="slds-m-right_x-small"/>
+                    {errorMessage}
+                    <button class="slds-button slds-button_icon slds-button_icon-inverse slds-notify__close"
+                            onclick={clearError} title="Close">
+                        <lightning-icon icon-name="utility:close" size="x-small"/>
+                    </button>
+                </div>
+            </template>
+
+            <!-- ══════════════════════════════════════════ -->
+            <!-- STEP 1 — Contract selection                -->
+            <!-- ══════════════════════════════════════════ -->
+            <template lwc:if={isStep1}>
+                <div class="slds-m-top_medium">
+                    <lightning-input type="search"
+                                     label="Search by contract or account name"
+                                     placeholder="Type to filter..."
+                                     onchange={handleSearch}
+                                     class="slds-m-bottom_small"/>
+
+                    <div class="docgen-contract-list">
+                        <template for:each={contractsWithSelection} for:item="c">
+                            <div key={c.Id}
+                                 class={c.rowClass}
+                                 onclick={handleContractToggle}
+                                 data-id={c.Id}>
+                                <span class="docgen-check">
+                                    <template lwc:if={c.isSelected}>✔</template>
+                                    <template lwc:else>&nbsp;</template>
+                                </span>
+                                <span class="docgen-acct">{c.Account.Name}</span>
+                                <span class="docgen-name">{c.Name}</span>
+                                <span class="docgen-status">{c.Status}</span>
+                                <span class="docgen-date">{c.Expiration_Date__c}</span>
+                            </div>
+                        </template>
+                        <template lwc:if={noContracts}>
+                            <div class="slds-align_absolute-center slds-p-around_medium slds-text-color_weak">
+                                No contracts found
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="slds-m-top_small slds-text-body_small slds-text-color_weak">
+                        {selectedCount} contract(s) selected
+                    </div>
+
+                    <div class="slds-m-top_medium">
+                        <lightning-button label="Next: Choose Grouping"
+                                          variant="brand"
+                                          onclick={goToStep2}
+                                          disabled={noContractsSelected}/>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ══════════════════════════════════════════ -->
+            <!-- STEP 2 — Grouping choice                   -->
+            <!-- ══════════════════════════════════════════ -->
+            <template lwc:if={isStep2}>
+                <div class="slds-m-top_medium">
+                    <lightning-radio-group
+                        name="docGenGroupBy"
+                        label="Group subscriptions by"
+                        options={groupByOptions}
+                        value={groupBy}
+                        type="radio"
+                        onchange={handleGroupByChange}/>
+
+                    <div class="slds-m-top_medium">
+                        <lightning-button label="Back"          onclick={goToStep1}/>
+                        <lightning-button label="Preview Data"  variant="brand"
+                                          onclick={loadPreview}
+                                          class="slds-m-left_small"/>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ══════════════════════════════════════════ -->
+            <!-- STEP 3 — Live preview                      -->
+            <!-- ══════════════════════════════════════════ -->
+            <template lwc:if={isStep3}>
+                <div class="slds-m-top_medium">
+                    <template lwc:if={isLoading}>
+                        <lightning-spinner alternative-text="Loading subscriptions…" size="medium"/>
+                    </template>
+                    <template lwc:else>
+                        <template for:each={previewGroups} for:item="grp">
+                            <div key={grp.groupLabel} class="docgen-preview-group">
+                                <div class="docgen-preview-group-header">{grp.groupLabel}</div>
+                                <table class="docgen-preview-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Site</th>
+                                            <th>Contract</th>
+                                            <th class="col-right">Qty</th>
+                                            <th class="col-right">Net Price</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template for:each={grp.lines} for:item="ln">
+                                            <tr key={ln.productName}>
+                                                <td>{ln.productName}</td>
+                                                <td>{ln.siteName}</td>
+                                                <td>{ln.contractName}</td>
+                                                <td class="col-right">{ln.quantity}</td>
+                                                <td class="col-right">{ln.netPriceFormatted}</td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                                <div class="docgen-preview-group-total">
+                                    Group Total: {grp.groupTotalFormatted}
+                                </div>
+                            </div>
+                        </template>
+                        <div class="docgen-preview-grand-total">
+                            Total: {grandTotalFormatted}
+                        </div>
+                    </template>
+
+                    <div class="slds-m-top_medium">
+                        <lightning-button label="Back"                   onclick={goToStep2}/>
+                        <lightning-button label="Choose Template →"       variant="brand"
+                                          onclick={goToStep4}
+                                          disabled={isLoading}
+                                          class="slds-m-left_small"/>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ══════════════════════════════════════════ -->
+            <!-- STEP 4 — Template picker + generate        -->
+            <!-- ══════════════════════════════════════════ -->
+            <template lwc:if={isStep4}>
+                <div class="slds-m-top_medium">
+                    <template lwc:if={isLoading}>
+                        <lightning-spinner alternative-text="Generating document…" size="medium"/>
+                        <p class="slds-align_absolute-center slds-m-top_large slds-text-color_weak">
+                            Reading template and building your document…
+                        </p>
+                    </template>
+                    <template lwc:else>
+                        <template lwc:if={downloadUrl}>
+                            <div class="docgen-success">
+                                <lightning-icon icon-name="utility:success"
+                                               variant="success" size="medium"/>
+                                <span class="slds-m-left_small">Document generated successfully!</span>
+                            </div>
+                            <div class="slds-m-top_medium">
+                                <a href={downloadUrl} target="_blank">
+                                    <lightning-button label="Download PDF"
+                                                      variant="brand"
+                                                      icon-name="utility:download"/>
+                                </a>
+                                <lightning-button label="Generate Another"
+                                                  onclick={reset}
+                                                  class="slds-m-left_small"/>
+                            </div>
+                        </template>
+                        <template lwc:else>
+                            <lightning-combobox
+                                name="docGenTemplate"
+                                label="Select CPQ Quote Template"
+                                placeholder="Choose a template…"
+                                options={templateOptions}
+                                value={selectedTemplateId}
+                                onchange={handleTemplateChange}/>
+                            <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                                The document will use this template's live header, footer,
+                                and branding at generation time.
+                            </p>
+                            <div class="slds-m-top_medium">
+                                <lightning-button label="Back"         onclick={goToStep3}/>
+                                <lightning-button label="Generate PDF"  variant="brand"
+                                                  icon-name="utility:apex"
+                                                  onclick={generateDocument}
+                                                  disabled={noTemplateSelected}
+                                                  class="slds-m-left_small"/>
+                            </div>
+                        </template>
+                    </template>
+                </div>
+            </template>
+
+        </div>
+    </lightning-card>
+</template>

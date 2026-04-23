@@ -1,0 +1,184 @@
+<apex:page controller="DocGenRendererCtrl"
+           renderAs="pdf"
+           showHeader="false"
+           applyBodyTag="false"
+           standardStylesheets="false"
+           contentType="application/pdf#DocGen_SubscriptionSummary.pdf">
+<html>
+<head>
+<style type="text/css">
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 9pt;
+        color: #2c2c2c;
+        margin: 0;
+        padding: 24px 32px;
+    }
+    /* ── Document meta fallback (shown only when template has no header) ── */
+    .docgen-meta {
+        border-bottom: 2px solid #0070d2;
+        padding-bottom: 12px;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    .docgen-meta .account { font-size: 14pt; font-weight: bold; color: #0070d2; }
+    .docgen-meta .detail  { font-size: 8pt; color: #666666; margin-top: 4px; }
+    /* ── Group section ── */
+    .docgen-group-header {
+        background-color: #0070d2;
+        color: #ffffff;
+        font-weight: bold;
+        font-size: 10pt;
+        padding: 7px 12px;
+        margin-top: 22px;
+        margin-bottom: 0;
+    }
+    /* ── Subscription table ── */
+    table.docgen-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 2px;
+    }
+    table.docgen-table th {
+        background-color: #e8f0fe;
+        color: #0050a0;
+        padding: 5px 8px;
+        text-align: left;
+        font-size: 8pt;
+        border-bottom: 1px solid #0070d2;
+    }
+    table.docgen-table td {
+        padding: 4px 8px;
+        border-bottom: 1px solid #eeeeee;
+        font-size: 8pt;
+        vertical-align: top;
+    }
+    table.docgen-table tr:nth-child(even) td { background-color: #f7f9ff; }
+    .col-right { text-align: right; }
+    /* ── Group total ── */
+    .docgen-group-total {
+        text-align: right;
+        font-weight: bold;
+        font-size: 8pt;
+        padding: 4px 8px;
+        border-top: 1px solid #0070d2;
+        background-color: #f0f4ff;
+        margin-bottom: 6px;
+    }
+    /* ── Grand total ── */
+    .docgen-grand-total {
+        background-color: #0070d2;
+        color: #ffffff;
+        font-weight: bold;
+        font-size: 10pt;
+        padding: 8px 12px;
+        text-align: right;
+        margin-top: 18px;
+    }
+    /* ── Generated footer (when template has no footer) ── */
+    .docgen-footer-fallback {
+        margin-top: 28px;
+        border-top: 1px solid #cccccc;
+        padding-top: 6px;
+        font-size: 7pt;
+        color: #888888;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+
+    <!-- ① CPQ template header — verbatim HTML with merge fields substituted -->
+    <apex:outputText escape="false" value="{!templateHeader}"/>
+
+    <!-- Fallback meta block when template has no header content -->
+    <apex:outputPanel rendered="{!ISBLANK(templateHeader)}">
+        <div class="docgen-meta">
+            <div class="account"><apex:outputText value="{!accountName}"/></div>
+            <div class="detail">
+                Subscription Summary &nbsp;|&nbsp;
+                Generated: <apex:outputText value="{!generatedDate}"/> &nbsp;|&nbsp;
+                Prepared by: <apex:outputText value="{!$User.Name}"/>
+            </div>
+        </div>
+    </apex:outputPanel>
+
+    <!-- ② Grouped subscription sections -->
+    <apex:repeat value="{!groups}" var="grp">
+
+        <div class="docgen-group-header">
+            <apex:outputText value="{!grp.groupLabel}"/>
+        </div>
+
+        <table class="docgen-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Site</th>
+                    <th>Contract</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th class="col-right">Qty</th>
+                    <th class="col-right">List Price</th>
+                    <th class="col-right">Net Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                <apex:repeat value="{!grp.lines}" var="ln">
+                    <tr>
+                        <td><apex:outputText value="{!ln.productName}"/></td>
+                        <td><apex:outputText value="{!ln.siteName}"/></td>
+                        <td><apex:outputText value="{!ln.contractName}"/></td>
+                        <td><apex:outputText value="{!ln.startDate}"/></td>
+                        <td><apex:outputText value="{!ln.endDate}"/></td>
+                        <td class="col-right">
+                            <apex:outputText value="{0, number, #,##0.##}">
+                                <apex:param value="{!ln.quantity}"/>
+                            </apex:outputText>
+                        </td>
+                        <td class="col-right">
+                            <apex:outputText value="{0, number, $#,##0.00}">
+                                <apex:param value="{!ln.listPrice}"/>
+                            </apex:outputText>
+                        </td>
+                        <td class="col-right">
+                            <apex:outputText value="{0, number, $#,##0.00}">
+                                <apex:param value="{!ln.netPrice}"/>
+                            </apex:outputText>
+                        </td>
+                    </tr>
+                </apex:repeat>
+            </tbody>
+        </table>
+
+        <div class="docgen-group-total">
+            Group Total:&nbsp;
+            <apex:outputText value="{0, number, $#,##0.00}">
+                <apex:param value="{!grp.groupTotal}"/>
+            </apex:outputText>
+        </div>
+
+    </apex:repeat>
+
+    <!-- ③ Grand total -->
+    <div class="docgen-grand-total">
+        Total:&nbsp;
+        <apex:outputText value="{0, number, $#,##0.00}">
+            <apex:param value="{!grandTotal}"/>
+        </apex:outputText>
+    </div>
+
+    <!-- ④ CPQ template footer — verbatim HTML with merge fields substituted -->
+    <apex:outputText escape="false" value="{!templateFooter}"/>
+
+    <!-- Fallback footer when template has no footer content -->
+    <apex:outputPanel rendered="{!ISBLANK(templateFooter)}">
+        <div class="docgen-footer-fallback">
+            This document was generated by DocGen on <apex:outputText value="{!generatedDate}"/>.
+            For internal use only.
+        </div>
+    </apex:outputPanel>
+
+</body>
+</html>
+</apex:page>
