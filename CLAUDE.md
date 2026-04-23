@@ -9,7 +9,7 @@ Salesforce CPQ subscription management and document generation platform.
 ```
 /
 ├── salesforce/          # SFDX project
-├── azure-app/           # Python/Flask integration layer
+├── azure-app/           # Not in use
 ├── docs/                # Project management docs
 └── .devcontainer/       # Devcontainer config
 ```

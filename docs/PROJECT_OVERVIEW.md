@@ -12,7 +12,7 @@ A Salesforce CPQ subscription management and document generation platform.
 |---|---|
 | CRM / Backend | Salesforce (SFDX) |
 | Frontend | Lightning Web Components (LWC) |
-| Integration layer | Azure / Python (Flask) |
+| Integration layer | TBD |
 | AI | Claude (Anthropic) |
 
 ## Architecture Overview
@@ -42,7 +42,7 @@ A Salesforce CPQ subscription management and document generation platform.
 ```
 /
 ├── salesforce/          # SFDX project (force-app metadata)
-├── azure-app/           # Python/Flask integration layer
+├── azure-app/           # Not in use
 ├── docs/                # Project documentation (you are here)
 └── .devcontainer/       # Codespace / devcontainer config
 ```
