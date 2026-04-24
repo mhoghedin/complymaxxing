@@ -1,10 +1,15 @@
 public class DocGenRendererCtrl {
-    public String templateHeader  { get; private set; }
-    public String templateFooter  { get; private set; }
-    public String groupBy         { get; private set; }
-    public String accountName     { get; private set; }
-    public String generatedDate   { get; private set; }
-    public Decimal grandTotal     { get; private set; }
+    public String templateHeader    { get; private set; }
+    public String templateFooter    { get; private set; }
+    public String groupBy           { get; private set; }
+    public String accountName       { get; private set; }
+    public String generatedDate     { get; private set; }
+    public String currentUserName   { get; private set; }
+    public Boolean showHeader       { get; private set; }
+    public Boolean showFooter       { get; private set; }
+    public Boolean showHeaderFallback { get; private set; }
+    public Boolean showFooterFallback { get; private set; }
+    public Decimal grandTotal       { get; private set; }
     public List<DocGenGroupWrapper> groups { get; private set; }
 
     public DocGenRendererCtrl() {
@@ -22,6 +27,7 @@ public class DocGenRendererCtrl {
         ];
         groupBy       = req.Group_By__c;
         generatedDate = Date.today().format();
+        currentUserName = UserInfo.getName();
 
         groups    = DocGenService.loadGroupsFromStaging(requestId);
         grandTotal = 0;
@@ -39,6 +45,11 @@ public class DocGenRendererCtrl {
         if (String.isNotBlank(req.Template_Id__c)) {
             loadTemplateContent(req.Template_Id__c, accountName);
         }
+
+        showHeader        = String.isNotBlank(templateHeader);
+        showFooter        = String.isNotBlank(templateFooter);
+        showHeaderFallback = !showHeader;
+        showFooterFallback = !showFooter;
     }
 
     // field names come from CMT — swapping CPQ package versions doesn't need a code deploy

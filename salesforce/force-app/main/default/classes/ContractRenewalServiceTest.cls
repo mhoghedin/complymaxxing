@@ -119,6 +119,6 @@ private class ContractRenewalServiceTest {
         List<Contract> contracts = new List<Contract>{
             new Contract(Renewal_Opportunity__c = null)
         };
-        System.assertNull(ContractRenewalService.getExistingRenewalOpp(contracts));
+        System.assertEquals(null, ContractRenewalService.getExistingRenewalOpp(contracts));
     }
 }

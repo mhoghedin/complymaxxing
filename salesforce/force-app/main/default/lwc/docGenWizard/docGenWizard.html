@@ -14,11 +14,11 @@
             <template lwc:if={errorMessage}>
                 <div class="slds-notify slds-notify_alert slds-alert_error slds-m-top_small" role="alert">
                     <lightning-icon icon-name="utility:error" alternative-text="Error" size="x-small"
-                                   class="slds-m-right_x-small"/>
+                                   class="slds-m-right_x-small"></lightning-icon>
                     {errorMessage}
                     <button class="slds-button slds-button_icon slds-button_icon-inverse slds-notify__close"
                             onclick={clearError} title="Close">
-                        <lightning-icon icon-name="utility:close" size="x-small"/>
+                        <lightning-icon icon-name="utility:close" size="x-small"></lightning-icon>
                     </button>
                 </div>
             </template>
@@ -32,7 +32,8 @@
                                      label="Search by contract or account name"
                                      placeholder="Type to filter..."
                                      onchange={handleSearch}
-                                     class="slds-m-bottom_small"/>
+                                     class="slds-m-bottom_small">
+                    </lightning-input>
 
                     <div class="docgen-contract-list">
                         <template for:each={contractsWithSelection} for:item="c">
@@ -65,7 +66,8 @@
                         <lightning-button label="Next: Choose Grouping"
                                           variant="brand"
                                           onclick={goToStep2}
-                                          disabled={noContractsSelected}/>
+                                          disabled={noContractsSelected}>
+                        </lightning-button>
                     </div>
                 </div>
             </template>
@@ -78,7 +80,7 @@
                     <template lwc:if={noGroupOptions}>
                         <div class="slds-notify slds-notify_alert slds-alert_warning" role="alert">
                             <lightning-icon icon-name="utility:warning" size="x-small"
-                                           class="slds-m-right_x-small"/>
+                                           class="slds-m-right_x-small"></lightning-icon>
                             No grouping options configured. Add records to the
                             <strong>DocGen Group Option</strong> Custom Metadata Type.
                         </div>
@@ -91,18 +93,20 @@
                             placeholder="Select a grouping…"
                             options={groupOptions}
                             value={groupBy}
-                            onchange={handleGroupByChange}/>
+                            onchange={handleGroupByChange}>
+                        </lightning-combobox>
                         <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
                             Options are configured in the DocGen Group Option Custom Metadata Type.
                         </p>
                     </template>
 
                     <div class="slds-m-top_medium">
-                        <lightning-button label="Back"          onclick={goToStep1}/>
-                        <lightning-button label="Preview Data"  variant="brand"
+                        <lightning-button label="Back" onclick={goToStep1}></lightning-button>
+                        <lightning-button label="Preview Data" variant="brand"
                                           onclick={loadPreview}
                                           disabled={noGroupBySelected}
-                                          class="slds-m-left_small"/>
+                                          class="slds-m-left_small">
+                        </lightning-button>
                     </div>
                 </div>
             </template>
@@ -113,7 +117,8 @@
             <template lwc:if={isStep3}>
                 <div class="slds-m-top_medium">
                     <template lwc:if={isLoading}>
-                        <lightning-spinner alternative-text="Loading subscriptions…" size="medium"/>
+                        <lightning-spinner alternative-text="Loading subscriptions…" size="medium">
+                        </lightning-spinner>
                     </template>
                     <template lwc:else>
                         <template for:each={previewGroups} for:item="grp">
@@ -152,11 +157,12 @@
                     </template>
 
                     <div class="slds-m-top_medium">
-                        <lightning-button label="Back"                   onclick={goToStep2}/>
-                        <lightning-button label="Choose Template →"       variant="brand"
+                        <lightning-button label="Back" onclick={goToStep2}></lightning-button>
+                        <lightning-button label="Choose Template →" variant="brand"
                                           onclick={goToStep4}
                                           disabled={cannotProceedToGenerate}
-                                          class="slds-m-left_small"/>
+                                          class="slds-m-left_small">
+                        </lightning-button>
                     </div>
                 </div>
             </template>
@@ -167,7 +173,8 @@
             <template lwc:if={isStep4}>
                 <div class="slds-m-top_medium">
                     <template lwc:if={isLoading}>
-                        <lightning-spinner alternative-text="Generating document…" size="medium"/>
+                        <lightning-spinner alternative-text="Generating document…" size="medium">
+                        </lightning-spinner>
                         <p class="slds-align_absolute-center slds-m-top_large slds-text-color_weak">
                             Reading template and building your document…
                         </p>
@@ -176,18 +183,21 @@
                         <template lwc:if={downloadUrl}>
                             <div class="docgen-success">
                                 <lightning-icon icon-name="utility:success"
-                                               variant="success" size="medium"/>
+                                               variant="success" size="medium">
+                                </lightning-icon>
                                 <span class="slds-m-left_small">Document generated successfully!</span>
                             </div>
                             <div class="slds-m-top_medium">
                                 <a href={downloadUrl} target="_blank">
                                     <lightning-button label="Download PDF"
                                                       variant="brand"
-                                                      icon-name="utility:download"/>
+                                                      icon-name="utility:download">
+                                    </lightning-button>
                                 </a>
                                 <lightning-button label="Generate Another"
                                                   onclick={reset}
-                                                  class="slds-m-left_small"/>
+                                                  class="slds-m-left_small">
+                                </lightning-button>
                             </div>
                         </template>
                         <template lwc:else>
@@ -197,18 +207,20 @@
                                 placeholder="Choose a template…"
                                 options={templateOptions}
                                 value={selectedTemplateId}
-                                onchange={handleTemplateChange}/>
+                                onchange={handleTemplateChange}>
+                            </lightning-combobox>
                             <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
                                 The document will use this template's live header, footer,
                                 and branding at generation time.
                             </p>
                             <div class="slds-m-top_medium">
-                                <lightning-button label="Back"         onclick={goToStep3}/>
-                                <lightning-button label="Generate PDF"  variant="brand"
+                                <lightning-button label="Back" onclick={goToStep3}></lightning-button>
+                                <lightning-button label="Generate PDF" variant="brand"
                                                   icon-name="utility:apex"
                                                   onclick={generateDocument}
                                                   disabled={noTemplateSelected}
-                                                  class="slds-m-left_small"/>
+                                                  class="slds-m-left_small">
+                                </lightning-button>
                             </div>
                         </template>
                     </template>
