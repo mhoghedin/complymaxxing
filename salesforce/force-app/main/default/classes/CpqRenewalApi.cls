@@ -11,6 +11,7 @@ public class CpqRenewalApi implements IRenewalApi {
                 contractId,
                 null
             );
+            if (String.isBlank(quoteJson)) continue;
             Map<String, Object> quoteData =
                 (Map<String, Object>) JSON.deserializeUntyped(quoteJson);
 
