@@ -15,11 +15,11 @@ public class ContractRenewalService {
         return groups;
     }
 
-    // non-null Renewal_Opportunity__c means a prior run already created the opp for this group
+    // non-null SBQQ__RenewalOpportunity__c means a prior run already created the opp for this group
     public static Id getExistingRenewalOpp(List<Contract> groupContracts) {
         for (Contract c : groupContracts) {
-            if (c.Renewal_Opportunity__c != null) {
-                return c.Renewal_Opportunity__c;
+            if (c.SBQQ__RenewalOpportunity__c != null) {
+                return c.SBQQ__RenewalOpportunity__c;
             }
         }
         return null;
@@ -39,7 +39,7 @@ public class ContractRenewalService {
         if (finalOppId != null) {
             List<Contract> toUpdate = new List<Contract>();
             for (Id cId : contractIds) {
-                toUpdate.add(new Contract(Id = cId, Renewal_Opportunity__c = finalOppId));
+                toUpdate.add(new Contract(Id = cId, SBQQ__RenewalOpportunity__c = finalOppId));
             }
             update toUpdate;
         }

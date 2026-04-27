@@ -21,15 +21,15 @@ public class ContractRenewalScheduler implements Schedulable {
 
         Map<String, Id> existingOppByGroupKey = new Map<String, Id>();
         for (Contract c : [
-            SELECT AccountId, Expiration_Date__c, Renewal_Opportunity__c
+            SELECT AccountId, Expiration_Date__c, SBQQ__RenewalOpportunity__c
             FROM Contract
             WHERE AccountId IN :accountIds
             AND Expiration_Date__c IN :expirationDates
-            AND Renewal_Opportunity__c != null
+            AND SBQQ__RenewalOpportunity__c != null
         ]) {
             String key = c.AccountId + '_' + String.valueOf(c.Expiration_Date__c);
             if (!existingOppByGroupKey.containsKey(key)) {
-                existingOppByGroupKey.put(key, c.Renewal_Opportunity__c);
+                existingOppByGroupKey.put(key, c.SBQQ__RenewalOpportunity__c);
             }
         }
 
@@ -55,10 +55,10 @@ public class ContractRenewalScheduler implements Schedulable {
     static List<Contract> queryContracts(ContractRenewalConfig config) {
         Integer queryLimit = config.queryLimit;
         return [
-            SELECT Id, AccountId, Expiration_Date__c, Renewal_Opportunity__c
+            SELECT Id, AccountId, Expiration_Date__c, SBQQ__RenewalOpportunity__c
             FROM Contract
-            WHERE Status = :config.finalizedStatus
-            AND SBQQ__RenewalQuoted__c = false
+            WHERE Contract_Status2__c = 'Contracted'
+            AND SBQQ__RenewalOpportunity__c = null
             AND Expiration_Date__c != null
             LIMIT :queryLimit
         ];
