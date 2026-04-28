@@ -82,6 +82,23 @@ public class ContractRenewalScheduler implements Schedulable {
             masterContractIds.add(masterId);
         }
 
+        // Reset renewal state for remerge groups — must happen here (DML before callout
+        // in the same transaction is not allowed, so this runs in the scheduler transaction
+        // and the callout runs later in the queueable transaction)
+        List<Contract> toReset = new List<Contract>();
+        for (Integer i = 0; i < groups.size(); i++) {
+            if (existingOpps.get(i) != null) {
+                for (Id cId : groups.get(i)) {
+                    toReset.add(new Contract(
+                        Id = cId,
+                        SBQQ__RenewalQuoted__c = false,
+                        SBQQ__RenewalOpportunity__c = null
+                    ));
+                }
+            }
+        }
+        if (!toReset.isEmpty()) update toReset;
+
         System.enqueueJob(new ContractRenewalQueueable(groups, existingOpps, masterContractIds, 0));
     }
 

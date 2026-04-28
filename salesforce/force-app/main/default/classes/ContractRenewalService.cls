@@ -25,18 +25,6 @@ public class ContractRenewalService {
     }
 
     public static void processGroup(List<Id> contractIds, Id existingRenewalOppId, Id masterContractId) {
-        if (existingRenewalOppId != null) {
-            List<Contract> toReset = new List<Contract>();
-            for (Id cId : contractIds) {
-                toReset.add(new Contract(
-                    Id = cId,
-                    SBQQ__RenewalQuoted__c = false,
-                    SBQQ__RenewalOpportunity__c = null
-                ));
-            }
-            update toReset;
-        }
-
         Id newOppId = renewApi.renewContracts(contractIds, masterContractId);
 
         Id finalOppId;
