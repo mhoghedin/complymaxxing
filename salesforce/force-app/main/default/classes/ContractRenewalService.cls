@@ -54,8 +54,6 @@ public class ContractRenewalService {
                 quotes[0].put('SBQQ__Opportunity2__c', targetOppId);
                 update quotes[0];
             }
-        } catch (System.QueryException e) {
-            // CPQ not installed — skip re-parenting
         } catch (DmlException e) {
             throw new ContractRenewalException(
                 'Failed to re-parent CPQ quote from opp ' + newOppId +
