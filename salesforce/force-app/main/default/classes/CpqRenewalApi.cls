@@ -1,7 +1,4 @@
 public class CpqRenewalApi implements IRenewalApi {
-    // SBQQ.ServiceRouter is the globally accessible CPQ API entry point.
-    // ContractRenewer takes one contract at a time and returns a quote model JSON.
-    // We merge all contracts' line items in memory and save once — one opp, one quote.
     public Id renewContracts(List<Id> contractIds) {
         Map<String, Object> masterQuote = null;
 
@@ -18,7 +15,6 @@ public class CpqRenewalApi implements IRenewalApi {
             if (masterQuote == null) {
                 masterQuote = quoteData;
             } else {
-                // Merge this contract's renewal lines into the master quote
                 List<Object> masterLines = (List<Object>) masterQuote.get('lineItems');
                 List<Object> newLines    = (List<Object>) quoteData.get('lineItems');
                 if (masterLines != null && newLines != null) {
@@ -32,12 +28,16 @@ public class CpqRenewalApi implements IRenewalApi {
                 'ContractRenewer returned no quote model for any contract in this group');
         }
 
-        // Save the merged quote — CPQ creates the renewal Opportunity and Quote in the org
         String savedJson = SBQQ.ServiceRouter.save(
             'SBQQ.QuoteAPI.QuoteSaver',
             JSON.serialize(masterQuote),
             null
         );
+
+        if (String.isBlank(savedJson)) {
+            throw new ContractRenewalService.ContractRenewalException(
+                'QuoteSaver returned no response when saving renewal quote');
+        }
 
         Map<String, Object> savedQuote =
             (Map<String, Object>) JSON.deserializeUntyped(savedJson);
@@ -48,7 +48,6 @@ public class CpqRenewalApi implements IRenewalApi {
                 'QuoteSaver did not return a Quote ID after saving renewal quote');
         }
 
-        // Read back the Opportunity the saved quote is linked to
         List<SBQQ__Quote__c> quotes = [
             SELECT SBQQ__Opportunity2__c
             FROM SBQQ__Quote__c

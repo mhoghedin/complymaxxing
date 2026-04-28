@@ -15,7 +15,6 @@ public class ContractRenewalService {
         return groups;
     }
 
-    // non-null SBQQ__RenewalOpportunity__c means a prior run already created the opp for this group
     public static Id getExistingRenewalOpp(List<Contract> groupContracts) {
         for (Contract c : groupContracts) {
             if (c.SBQQ__RenewalOpportunity__c != null) {
@@ -45,7 +44,6 @@ public class ContractRenewalService {
         }
     }
 
-    // dynamic SOQL so this compiles without CPQ installed
     @TestVisible
     static void reparentQuote(Id newOppId, Id targetOppId) {
         try {
@@ -57,7 +55,7 @@ public class ContractRenewalService {
                 update quotes[0];
             }
         } catch (System.QueryException e) {
-            // no CPQ — skip re-parenting, opp deletion still runs below
+            // CPQ not installed — skip re-parenting
         } catch (DmlException e) {
             throw new ContractRenewalException(
                 'Failed to re-parent CPQ quote from opp ' + newOppId +

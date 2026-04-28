@@ -3,7 +3,6 @@ public class ContractRenewalQueueable implements Queueable, Database.AllowsCallo
     private List<Id> existingOppIds;
     private Integer index;
 
-    // prevents Queueable chaining in tests
     @TestVisible static Boolean disableChaining = false;
 
     public ContractRenewalQueueable(List<List<Id>> groups, List<Id> existingOppIds, Integer index) {
@@ -19,14 +18,16 @@ public class ContractRenewalQueueable implements Queueable, Database.AllowsCallo
         try {
             ContractRenewalService.processGroup(contractIds, existingOppId);
         } catch (Exception e) {
-            List<Contract> errored = new List<Contract>();
-            for (Id cId : contractIds) {
-                errored.add(new Contract(
-                    Id = cId,
-                    Renewal_Error__c = e.getMessage().left(255)
-                ));
-            }
-            update errored;
+            try {
+                List<Contract> errored = new List<Contract>();
+                for (Id cId : contractIds) {
+                    errored.add(new Contract(
+                        Id = cId,
+                        Renewal_Error__c = e.getMessage().left(255)
+                    ));
+                }
+                update errored;
+            } catch (Exception ignored) {}
         }
 
         Integer nextIndex = index + 1;
