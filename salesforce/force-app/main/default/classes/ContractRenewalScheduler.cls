@@ -18,8 +18,11 @@ public class ContractRenewalScheduler implements Schedulable {
         }
 
         Map<String, Id> existingOppByGroupKey = new Map<String, Id>();
+        Map<String, List<Id>> priorContractsByGroupKey = new Map<String, List<Id>>();
+        Map<String, Id> priorMasterByGroupKey = new Map<String, Id>();
+
         for (Contract c : [
-            SELECT AccountId, Expiration_Date__c, SBQQ__RenewalOpportunity__c
+            SELECT Id, AccountId, Expiration_Date__c, SBQQ__RenewalOpportunity__c, SBQQ__MasterContract__c
             FROM Contract
             WHERE AccountId IN :accountIds
             AND Expiration_Date__c IN :expirationDates
@@ -28,6 +31,11 @@ public class ContractRenewalScheduler implements Schedulable {
             String key = c.AccountId + '_' + String.valueOf(c.Expiration_Date__c);
             if (!existingOppByGroupKey.containsKey(key)) {
                 existingOppByGroupKey.put(key, c.SBQQ__RenewalOpportunity__c);
+                priorContractsByGroupKey.put(key, new List<Id>());
+            }
+            priorContractsByGroupKey.get(key).add(c.Id);
+            if (c.SBQQ__MasterContract__c) {
+                priorMasterByGroupKey.put(key, c.Id);
             }
         }
 
@@ -39,20 +47,36 @@ public class ContractRenewalScheduler implements Schedulable {
 
         for (String key : grouped.keySet()) {
             List<Contract> groupContracts = grouped.get(key);
-            List<Id> ids = new List<Id>();
-            Id masterId = null;
-            for (Contract c : groupContracts) {
-                if (c.SBQQ__MasterContract__c) {
-                    masterId = c.Id;
-                } else {
-                    ids.add(c.Id);
+            List<Id> masterFirst = new List<Id>();
+            List<Id> others = new List<Id>();
+            Id masterId = priorMasterByGroupKey.get(key);
+
+            // Slot already-renewed contracts into master/others
+            if (priorContractsByGroupKey.containsKey(key)) {
+                for (Id priorId : priorContractsByGroupKey.get(key)) {
+                    if (priorId == masterId) {
+                        masterFirst.add(priorId);
+                    } else {
+                        others.add(priorId);
+                    }
                 }
             }
-            if (masterId != null) {
-                ids.add(0, masterId);
-            } else {
-                masterId = ids[0];
+
+            // Slot new contracts in, detecting master if not already known
+            for (Contract c : groupContracts) {
+                if (c.SBQQ__MasterContract__c) {
+                    if (masterId == null) masterId = c.Id;
+                    masterFirst.add(c.Id);
+                } else {
+                    others.add(c.Id);
+                }
             }
+
+            List<Id> ids = new List<Id>();
+            ids.addAll(masterFirst);
+            ids.addAll(others);
+            if (masterId == null && !ids.isEmpty()) masterId = ids[0];
+
             groups.add(ids);
             existingOpps.add(existingOppByGroupKey.get(key));
             masterContractIds.add(masterId);
