@@ -47,13 +47,28 @@ public class ContractRenewalService {
     @TestVisible
     static void reparentQuote(Id newOppId, Id targetOppId) {
         try {
-            List<SObject> quotes = Database.query(
+            List<SObject> newQuotes = Database.query(
                 'SELECT Id FROM SBQQ__Quote__c WHERE SBQQ__Opportunity2__c = :newOppId LIMIT 1'
             );
-            if (!quotes.isEmpty()) {
-                quotes[0].put('SBQQ__Opportunity2__c', targetOppId);
-                update quotes[0];
+            if (newQuotes.isEmpty()) {
+                delete new Opportunity(Id = newOppId);
+                return;
             }
+
+            // Demote any existing primary quotes on the target opp
+            List<SObject> existingPrimary = Database.query(
+                'SELECT Id FROM SBQQ__Quote__c WHERE SBQQ__Opportunity2__c = :targetOppId AND SBQQ__Primary__c = true'
+            );
+            for (SObject q : existingPrimary) {
+                q.put('SBQQ__Primary__c', false);
+            }
+            if (!existingPrimary.isEmpty()) update existingPrimary;
+
+            // Move new quote to target opp and make it primary
+            SObject newQuote = newQuotes[0];
+            newQuote.put('SBQQ__Opportunity2__c', targetOppId);
+            newQuote.put('SBQQ__Primary__c', true);
+            update newQuote;
         } catch (DmlException e) {
             throw new ContractRenewalException(
                 'Failed to re-parent CPQ quote from opp ' + newOppId +
