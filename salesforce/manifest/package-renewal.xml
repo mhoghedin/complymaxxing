@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>IRenewalApi</members>
+        <members>CpqRenewalApi</members>
+        <members>ContractRenewalService</members>
+        <members>ContractRenewalQueueable</members>
+        <name>ApexClass</name>
+    </types>
+    <types>
+        <members>Contract.Renewal_Error__c</members>
+        <name>CustomField</name>
+    </types>
+    <version>66.0</version>
+</Package>
