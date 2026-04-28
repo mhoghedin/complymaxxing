@@ -24,8 +24,8 @@ public class ContractRenewalService {
         return null;
     }
 
-    public static void processGroup(List<Id> contractIds, Id existingRenewalOppId) {
-        Id newOppId = renewApi.renewContracts(contractIds);
+    public static void processGroup(List<Id> contractIds, Id existingRenewalOppId, Id masterContractId) {
+        Id newOppId = renewApi.renewContracts(contractIds, masterContractId);
 
         Id finalOppId;
         if (existingRenewalOppId != null && newOppId != null && newOppId != existingRenewalOppId) {

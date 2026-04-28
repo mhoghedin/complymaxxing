@@ -1,5 +1,4 @@
 public class ContractRenewalScheduler implements Schedulable {
-    // test injection — bypasses the CPQ-field SOQL
     @TestVisible static List<Contract> testContracts;
 
     public void execute(SchedulableContext ctx) {
@@ -11,7 +10,6 @@ public class ContractRenewalScheduler implements Schedulable {
 
         if (contracts.isEmpty()) return;
 
-        // find any groups already processed in a prior run
         Set<Id> accountIds = new Set<Id>();
         Set<Date> expirationDates = new Set<Date>();
         for (Contract c : contracts) {
@@ -37,25 +35,37 @@ public class ContractRenewalScheduler implements Schedulable {
 
         List<List<Id>> groups = new List<List<Id>>();
         List<Id> existingOpps = new List<Id>();
+        List<Id> masterContractIds = new List<Id>();
 
         for (String key : grouped.keySet()) {
+            List<Contract> groupContracts = grouped.get(key);
             List<Id> ids = new List<Id>();
-            for (Contract c : grouped.get(key)) {
-                ids.add(c.Id);
+            Id masterId = null;
+            for (Contract c : groupContracts) {
+                if (c.SBQQ__MasterContract__c) {
+                    masterId = c.Id;
+                } else {
+                    ids.add(c.Id);
+                }
+            }
+            if (masterId != null) {
+                ids.add(0, masterId);
+            } else {
+                masterId = ids[0];
             }
             groups.add(ids);
             existingOpps.add(existingOppByGroupKey.get(key));
+            masterContractIds.add(masterId);
         }
 
-        System.enqueueJob(new ContractRenewalQueueable(groups, existingOpps, 0));
+        System.enqueueJob(new ContractRenewalQueueable(groups, existingOpps, masterContractIds, 0));
     }
 
-    // LIMIT prevents heap overflow; go Batchable if volume ever hits 10k+
     @TestVisible
     static List<Contract> queryContracts(ContractRenewalConfig config) {
         Integer queryLimit = config.queryLimit;
         return [
-            SELECT Id, AccountId, Expiration_Date__c, SBQQ__RenewalOpportunity__c
+            SELECT Id, AccountId, Expiration_Date__c, SBQQ__RenewalOpportunity__c, SBQQ__MasterContract__c
             FROM Contract
             WHERE Contract_Status2__c = 'Contracted'
             AND SBQQ__RenewalOpportunity__c = null

@@ -1,36 +1,24 @@
 public class CpqRenewalApi implements IRenewalApi {
-    public Id renewContracts(List<Id> contractIds) {
-        Map<String, Object> masterQuote = null;
+    public Id renewContracts(List<Id> contractIds, Id masterContractId) {
+        Map<String, Object> renewalContext = new Map<String, Object>{
+            'masterContractId' => masterContractId,
+            'renewedContracts' => contractIds
+        };
 
-        for (Id contractId : contractIds) {
-            String quoteJson = SBQQ.ServiceRouter.load(
-                'SBQQ.ContractManipulationAPI.ContractRenewer',
-                contractId,
-                null
-            );
-            if (String.isBlank(quoteJson)) continue;
-            Map<String, Object> quoteData =
-                (Map<String, Object>) JSON.deserializeUntyped(quoteJson);
+        String quoteJson = SBQQ.ServiceRouter.load(
+            'SBQQ.ContractManipulationAPI.ContractRenewer',
+            masterContractId,
+            JSON.serialize(renewalContext)
+        );
 
-            if (masterQuote == null) {
-                masterQuote = quoteData;
-            } else {
-                List<Object> masterLines = (List<Object>) masterQuote.get('lineItems');
-                List<Object> newLines    = (List<Object>) quoteData.get('lineItems');
-                if (masterLines != null && newLines != null) {
-                    masterLines.addAll(newLines);
-                }
-            }
-        }
-
-        if (masterQuote == null) {
+        if (String.isBlank(quoteJson)) {
             throw new ContractRenewalService.ContractRenewalException(
-                'ContractRenewer returned no quote model for any contract in this group');
+                'ContractRenewer returned no quote model for contracts: ' + contractIds);
         }
 
         String savedJson = SBQQ.ServiceRouter.save(
             'SBQQ.QuoteAPI.QuoteSaver',
-            JSON.serialize(masterQuote),
+            quoteJson,
             null
         );
 
