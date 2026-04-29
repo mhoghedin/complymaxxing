@@ -33,8 +33,9 @@ public class ContractRenewalQueueable implements Queueable, Database.AllowsCallo
             } catch (Exception ignored) {}
         }
 
-        if (index + 1 < groups.size() && !disableChaining) {
-            System.enqueueJob(new ContractRenewalQueueable(groups, existingOppIds, masterContractIds, index + 1));
+        Integer nextIndex = index + 1;
+        if (nextIndex < groups.size() && !disableChaining) {
+            System.enqueueJob(new ContractRenewalQueueable(groups, existingOppIds, masterContractIds, nextIndex));
         }
     }
 }

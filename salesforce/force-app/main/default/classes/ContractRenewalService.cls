@@ -15,6 +15,15 @@ public class ContractRenewalService {
         return groups;
     }
 
+    public static Id getExistingRenewalOpp(List<Contract> groupContracts) {
+        for (Contract c : groupContracts) {
+            if (c.SBQQ__RenewalOpportunity__c != null) {
+                return c.SBQQ__RenewalOpportunity__c;
+            }
+        }
+        return null;
+    }
+
     public static void processGroup(List<Id> contractIds, Id existingRenewalOppId, Id masterContractId) {
         Id newOppId = renewApi.renewContracts(contractIds, masterContractId);
 
