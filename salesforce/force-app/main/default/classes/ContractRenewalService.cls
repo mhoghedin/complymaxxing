@@ -86,6 +86,10 @@ public class ContractRenewalService {
                 q.put('SBQQ__Primary__c', false);
             }
             if (!toDemote.isEmpty()) update toDemote;
+
+            // CPQ doesn't always update SBQQ__PrimaryQuote__c on the Opp
+            // when a quote is demoted — set it explicitly
+            update new Opportunity(Id = targetOppId, SBQQ__PrimaryQuote__c = newQuoteId);
         } catch (Exception ignored) {}
     }
 }
