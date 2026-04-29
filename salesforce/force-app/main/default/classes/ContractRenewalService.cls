@@ -58,20 +58,23 @@ public class ContractRenewalService {
             );
         }
 
-        // Schedule cleanup 2 minutes out — gives CPQ's calculation sequence
-        // time to fully settle before we demote the old primary quote
-        if (newQuoteId != null) {
-            DateTime runAt = DateTime.now().addMinutes(2);
-            String cron = runAt.second() + ' ' + runAt.minute() + ' ' + runAt.hour()
-                + ' ' + runAt.day() + ' ' + runAt.month() + ' ? ' + runAt.year();
-            System.schedule('QuotePrimaryCleanup_' + newQuoteId, cron,
-                new QuotePrimaryCleanup(targetOppId, newQuoteId));
-        }
+        // Schedule cleanup — CPQ's QuoteAfter trigger enforces timing constraints
+        // that require a separate transaction; the delay lets the calculation settle
+        System.schedule('QuotePrimaryCleanup_' + newQuoteId, buildCron(SYNC_DELAY_MINUTES),
+            new QuotePrimaryCleanup(targetOppId, newQuoteId));
 
         try {
             delete new Opportunity(Id = newOppId);
         } catch (DmlException e) {
             // Best-effort — quote is already on the right opp, contracts will still be stamped
         }
+    }
+
+    private static final Integer SYNC_DELAY_MINUTES = 2;
+
+    private static String buildCron(Integer delayMinutes) {
+        DateTime runAt = DateTime.now().addMinutes(delayMinutes);
+        return runAt.second() + ' ' + runAt.minute() + ' ' + runAt.hour()
+            + ' ' + runAt.day() + ' ' + runAt.month() + ' ? ' + runAt.year();
     }
 }

@@ -1,4 +1,6 @@
 public class QuotePrimaryCleanup implements Schedulable {
+    private static final Integer SYNC_DELAY_MINUTES = 2;
+
     private Id targetOppId;
     private Id newQuoteId;
 
@@ -23,11 +25,14 @@ public class QuotePrimaryCleanup implements Schedulable {
         } catch (Exception ignored) {}
 
         try {
-            DateTime runAt = DateTime.now().addMinutes(2);
-            String cron = runAt.second() + ' ' + runAt.minute() + ' ' + runAt.hour()
-                + ' ' + runAt.day() + ' ' + runAt.month() + ' ? ' + runAt.year();
-            System.schedule('QuotePrimarySync_' + newQuoteId, cron,
-                new QuotePrimarySync(targetOppId, newQuoteId));
+            System.schedule('QuotePrimarySync_' + newQuoteId, buildCron(SYNC_DELAY_MINUTES),
+                new QuotePrimarySync(newQuoteId));
         } catch (Exception ignored) {}
+    }
+
+    private static String buildCron(Integer delayMinutes) {
+        DateTime runAt = DateTime.now().addMinutes(delayMinutes);
+        return runAt.second() + ' ' + runAt.minute() + ' ' + runAt.hour()
+            + ' ' + runAt.day() + ' ' + runAt.month() + ' ? ' + runAt.year();
     }
 }
