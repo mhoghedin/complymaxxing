@@ -82,9 +82,7 @@ public class ContractRenewalScheduler implements Schedulable {
             masterContractIds.add(masterId);
         }
 
-        // Reset renewal state for remerge groups — must happen here (DML before callout
-        // in the same transaction is not allowed, so this runs in the scheduler transaction
-        // and the callout runs later in the queueable transaction)
+        // Must run here: Apex forbids DML before a callout in the same transaction
         List<Contract> toReset = new List<Contract>();
         for (Integer i = 0; i < groups.size(); i++) {
             if (existingOpps.get(i) != null) {
@@ -104,14 +102,13 @@ public class ContractRenewalScheduler implements Schedulable {
 
     @TestVisible
     static List<Contract> queryContracts(ContractRenewalConfig config) {
-        Integer queryLimit = config.queryLimit;
         return [
             SELECT Id, AccountId, Expiration_Date__c, SBQQ__RenewalOpportunity__c, SBQQ__MasterContract__c
             FROM Contract
             WHERE Contract_Status2__c = 'Contracted'
             AND SBQQ__RenewalOpportunity__c = null
             AND Expiration_Date__c != null
-            LIMIT :queryLimit
+            LIMIT :config.queryLimit
         ];
     }
 }
