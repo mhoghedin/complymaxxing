@@ -5,11 +5,21 @@
         <members>CpqRenewalApi</members>
         <members>ContractRenewalService</members>
         <members>ContractRenewalQueueable</members>
+        <members>ContractRenewalConfig</members>
+        <members>ContractRenewalScheduler</members>
         <name>ApexClass</name>
     </types>
     <types>
         <members>Contract.Renewal_Error__c</members>
         <name>CustomField</name>
+    </types>
+    <types>
+        <members>ContractRenewalConfig__mdt</members>
+        <name>CustomObject</name>
+    </types>
+    <types>
+        <members>ContractRenewalConfig.Default</members>
+        <name>CustomMetadata</name>
     </types>
     <version>66.0</version>
 </Package>
