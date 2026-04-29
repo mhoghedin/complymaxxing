@@ -75,6 +75,11 @@ public class ContractRenewalService {
                 ' to ' + targetOppId + ': ' + e.getMessage()
             );
         }
-        delete new Opportunity(Id = newOppId);
+
+        try {
+            delete new Opportunity(Id = newOppId);
+        } catch (DmlException e) {
+            // Best-effort — quote is already on the right opp, contracts will still be stamped
+        }
     }
 }
