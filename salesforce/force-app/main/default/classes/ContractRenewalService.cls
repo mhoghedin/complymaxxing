@@ -46,14 +46,6 @@ public class ContractRenewalService {
                 return;
             }
 
-            List<SObject> existingPrimary = Database.query(
-                'SELECT Id FROM SBQQ__Quote__c WHERE SBQQ__Opportunity2__c = :targetOppId AND SBQQ__Primary__c = true'
-            );
-            for (SObject q : existingPrimary) {
-                q.put('SBQQ__Primary__c', false);
-            }
-            if (!existingPrimary.isEmpty()) update existingPrimary;
-
             SObject newQuote = newQuotes[0];
             newQuote.put('SBQQ__Opportunity2__c', targetOppId);
             newQuote.put('SBQQ__Primary__c', true);
