@@ -1,7 +1,8 @@
 public class CpqRenewalApi implements IRenewalApi {
     public Id renewContracts(List<Id> contractIds, Id masterContractId) {
-        List<Contract> contractRecords = new List<Contract>();
-        for (Id cId : contractIds) contractRecords.add(new Contract(Id = cId));
+        List<Contract> contractRecords = [
+            SELECT Id, SBQQ__MasterContract__c FROM Contract WHERE Id IN :contractIds
+        ];
 
         Map<String, Object> renewalContext = new Map<String, Object>{
             'masterContractId' => masterContractId,
