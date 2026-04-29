@@ -50,7 +50,6 @@ public class ContractRenewalService {
             SObject newQuote = newQuotes[0];
             newQuoteId = (Id) newQuote.get('Id');
             newQuote.put('SBQQ__Opportunity2__c', targetOppId);
-            newQuote.put('SBQQ__Primary__c', false);
             update newQuote;
         } catch (DmlException e) {
             throw new ContractRenewalException(
@@ -59,11 +58,14 @@ public class ContractRenewalService {
             );
         }
 
-        // Promote in a separate transaction — CPQ reliably handles the
-        // false→true promotion path, including demoting other primaries and
-        // updating SBQQ__PrimaryQuote__c on the Opp
+        // Schedule cleanup 2 minutes out — gives CPQ's calculation sequence
+        // time to fully settle before we demote the old primary quote
         if (newQuoteId != null) {
-            promoteQuote(newQuoteId);
+            DateTime runAt = DateTime.now().addMinutes(2);
+            String cron = runAt.second() + ' ' + runAt.minute() + ' ' + runAt.hour()
+                + ' ' + runAt.day() + ' ' + runAt.month() + ' ? ' + runAt.year();
+            System.schedule('QuotePrimaryCleanup_' + newQuoteId, cron,
+                new QuotePrimaryCleanup(targetOppId, newQuoteId));
         }
 
         try {
@@ -71,16 +73,5 @@ public class ContractRenewalService {
         } catch (DmlException e) {
             // Best-effort — quote is already on the right opp, contracts will still be stamped
         }
-    }
-
-    @future
-    static void promoteQuote(Id quoteId) {
-        try {
-            SObject q = Database.query(
-                'SELECT Id FROM SBQQ__Quote__c WHERE Id = :quoteId LIMIT 1'
-            )[0];
-            q.put('SBQQ__Primary__c', true);
-            update q;
-        } catch (Exception ignored) {}
     }
 }

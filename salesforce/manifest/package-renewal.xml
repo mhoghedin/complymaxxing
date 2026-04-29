@@ -7,6 +7,7 @@
         <members>ContractRenewalQueueable</members>
         <members>ContractRenewalConfig</members>
         <members>ContractRenewalScheduler</members>
+        <members>QuotePrimaryCleanup</members>
         <name>ApexClass</name>
     </types>
     <types>
