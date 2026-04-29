@@ -8,6 +8,7 @@
         <members>ContractRenewalConfig</members>
         <members>ContractRenewalScheduler</members>
         <members>QuotePrimaryCleanup</members>
+        <members>QuotePrimarySync</members>
         <name>ApexClass</name>
     </types>
     <types>
