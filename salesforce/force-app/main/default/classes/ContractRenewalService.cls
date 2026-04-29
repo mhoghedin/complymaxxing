@@ -50,7 +50,7 @@ public class ContractRenewalService {
             SObject newQuote = newQuotes[0];
             newQuoteId = (Id) newQuote.get('Id');
             newQuote.put('SBQQ__Opportunity2__c', targetOppId);
-            newQuote.put('SBQQ__Primary__c', true);
+            newQuote.put('SBQQ__Primary__c', false);
             update newQuote;
         } catch (DmlException e) {
             throw new ContractRenewalException(
@@ -59,10 +59,11 @@ public class ContractRenewalService {
             );
         }
 
-        // Demote old primary in a separate transaction — CPQ's QuoteAfter is
-        // finicky during the calculation sequence; separate tx avoids contention
+        // Promote in a separate transaction — CPQ reliably handles the
+        // false→true promotion path, including demoting other primaries and
+        // updating SBQQ__PrimaryQuote__c on the Opp
         if (newQuoteId != null) {
-            demoteOldPrimaryQuote(targetOppId, newQuoteId);
+            promoteQuote(newQuoteId);
         }
 
         try {
@@ -73,23 +74,13 @@ public class ContractRenewalService {
     }
 
     @future
-    static void demoteOldPrimaryQuote(Id targetOppId, Id newQuoteId) {
+    static void promoteQuote(Id quoteId) {
         try {
-            Id nqId = newQuoteId;
-            List<SObject> toDemote = Database.query(
-                'SELECT Id FROM SBQQ__Quote__c ' +
-                'WHERE SBQQ__Opportunity2__c = :targetOppId ' +
-                'AND SBQQ__Primary__c = true ' +
-                'AND Id != :nqId'
-            );
-            for (SObject q : toDemote) {
-                q.put('SBQQ__Primary__c', false);
-            }
-            if (!toDemote.isEmpty()) update toDemote;
-
-            // CPQ doesn't always update SBQQ__PrimaryQuote__c on the Opp
-            // when a quote is demoted — set it explicitly
-            update new Opportunity(Id = targetOppId, SBQQ__PrimaryQuote__c = newQuoteId);
+            SObject q = Database.query(
+                'SELECT Id FROM SBQQ__Quote__c WHERE Id = :quoteId LIMIT 1'
+            )[0];
+            q.put('SBQQ__Primary__c', true);
+            update q;
         } catch (Exception ignored) {}
     }
 }
