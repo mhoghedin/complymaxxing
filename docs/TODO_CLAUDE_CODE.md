@@ -21,3 +21,4 @@
 | 2026-04-23 | Scaffold Salesforce SFDX project |
 | 2026-04-23 | Build automated contract renewal merging job (ContractRenewalScheduler, Queueable, Service, IRenewalApi/CpqRenewalApi, ContractRenewalConfig, 3 test classes, Custom Metadata Type, 2 Contract fields) |
 | 2026-04-23 | Build DocGen multi-contract subscription document generator (DocGenWizard LWC, DocGenController, DocGenService, DocGenRendererCtrl, DocGenRenderer VF, wrappers, 2 test classes, DocGen_Request__c + DocGen_Line__c objects) |
+| 2026-04-29 | Fix remerge: reset renewal state in scheduler tx (before callout), reparent new CPQ quote to original opp, demote old primary in separate @future tx to avoid CPQ QuoteAfter locking |

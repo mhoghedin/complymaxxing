@@ -37,6 +37,7 @@ public class ContractRenewalService {
 
     @TestVisible
     static void reparentQuote(Id newOppId, Id targetOppId) {
+        Id newQuoteId;
         try {
             List<SObject> newQuotes = Database.query(
                 'SELECT Id FROM SBQQ__Quote__c WHERE SBQQ__Opportunity2__c = :newOppId LIMIT 1'
@@ -47,6 +48,7 @@ public class ContractRenewalService {
             }
 
             SObject newQuote = newQuotes[0];
+            newQuoteId = (Id) newQuote.get('Id');
             newQuote.put('SBQQ__Opportunity2__c', targetOppId);
             newQuote.put('SBQQ__Primary__c', true);
             update newQuote;
@@ -57,10 +59,33 @@ public class ContractRenewalService {
             );
         }
 
+        // Demote old primary in a separate transaction — CPQ's QuoteAfter is
+        // finicky during the calculation sequence; separate tx avoids contention
+        if (newQuoteId != null) {
+            demoteOldPrimaryQuote(targetOppId, newQuoteId);
+        }
+
         try {
             delete new Opportunity(Id = newOppId);
         } catch (DmlException e) {
             // Best-effort — quote is already on the right opp, contracts will still be stamped
         }
+    }
+
+    @future
+    static void demoteOldPrimaryQuote(Id targetOppId, Id newQuoteId) {
+        try {
+            Id nqId = newQuoteId;
+            List<SObject> toDemote = Database.query(
+                'SELECT Id FROM SBQQ__Quote__c ' +
+                'WHERE SBQQ__Opportunity2__c = :targetOppId ' +
+                'AND SBQQ__Primary__c = true ' +
+                'AND Id != :nqId'
+            );
+            for (SObject q : toDemote) {
+                q.put('SBQQ__Primary__c', false);
+            }
+            if (!toDemote.isEmpty()) update toDemote;
+        } catch (Exception ignored) {}
     }
 }

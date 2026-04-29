@@ -11,6 +11,9 @@
     </types>
     <types>
         <members>Contract.Renewal_Error__c</members>
+        <members>ContractRenewalConfig__mdt.Finalized_Status__c</members>
+        <members>ContractRenewalConfig__mdt.Job_Cron__c</members>
+        <members>ContractRenewalConfig__mdt.Query_Limit__c</members>
         <name>CustomField</name>
     </types>
     <types>

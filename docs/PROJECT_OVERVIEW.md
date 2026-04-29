@@ -125,6 +125,7 @@ VF: ContractDocumentRenderer
 | 2026-04-23 | Group-by field and template field names driven by Custom Metadata | Claude Code | Extensible without code changes; admin can add new grouping options |
 | 2026-04-28 | ContractRenewalScheduler not deployed to sandbox | Matt | Control when job runs during testing; deploy only when ready to schedule |
 | 2026-04-28 | Use SBQQ__RenewalOpportunity__c (native CPQ field) not custom field | Claude Code | Consistent with how CPQ itself tracks renewal opp; avoids dual-tracking |
+| 2026-04-29 | Demote old primary quote in @future (separate tx), not same tx as reparent | Claude Code | CPQ's QuoteAfter trigger is finicky during calculation sequence; separate tx avoids row-lock contention |
 
 ## Open Questions
 
