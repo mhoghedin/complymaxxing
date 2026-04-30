@@ -4,7 +4,7 @@ private class ContractRenewalSchedulerTest {
     private class MockRenewalApi implements IRenewalApi {
         public Id returnOppId;
         MockRenewalApi(Id returnOppId) { this.returnOppId = returnOppId; }
-        public Id renewContracts(List<Id> contractIds) { return returnOppId; }
+        public Id renewContracts(List<Id> contractIds, Id masterContractId) { return returnOppId; }
     }
 
     // Returns a different opp ID on each call — proves groups are processed separately
@@ -12,7 +12,7 @@ private class ContractRenewalSchedulerTest {
         private List<Id> returnIds;
         private Integer callCount = 0;
         SequentialMockRenewalApi(List<Id> returnIds) { this.returnIds = returnIds; }
-        public Id renewContracts(List<Id> contractIds) { return returnIds[callCount++]; }
+        public Id renewContracts(List<Id> contractIds, Id masterContractId) { return returnIds[callCount++]; }
     }
 
     private static Account makeAccount() {
@@ -42,7 +42,7 @@ private class ContractRenewalSchedulerTest {
 
     @isTest
     static void execute_noContracts_doesNothing() {
-        ContractRenewalConfig.forTest('Fully Executed');
+        ContractRenewalConfig.forTest('Contracted');
         ContractRenewalScheduler.testContracts = new List<Contract>();
 
         Test.startTest();
@@ -61,22 +61,23 @@ private class ContractRenewalSchedulerTest {
         Contract c1 = makeContract(a.Id, expDate);
         Contract c2 = makeContract(a.Id, expDate);
 
-        ContractRenewalConfig.forTest('Fully Executed');
+        ContractRenewalConfig.forTest('Contracted');
         ContractRenewalService.renewApi = new MockRenewalApi(mockOpp.Id);
 
-        // Inject contracts to bypass CPQ-field SOQL
         ContractRenewalScheduler.testContracts = new List<Contract>{
-            new Contract(Id = c1.Id, AccountId = a.Id, Expiration_Date__c = expDate, Renewal_Opportunity__c = null),
-            new Contract(Id = c2.Id, AccountId = a.Id, Expiration_Date__c = expDate, Renewal_Opportunity__c = null)
+            new Contract(Id = c1.Id, AccountId = a.Id, Expiration_Date__c = expDate,
+                SBQQ__RenewalOpportunity__c = null, SBQQ__MasterContract__c = false),
+            new Contract(Id = c2.Id, AccountId = a.Id, Expiration_Date__c = expDate,
+                SBQQ__RenewalOpportunity__c = null, SBQQ__MasterContract__c = false)
         };
 
         Test.startTest();
         new ContractRenewalScheduler().execute(null);
         Test.stopTest();
 
-        List<Contract> updated = [SELECT Renewal_Opportunity__c FROM Contract WHERE Id IN :new List<Id>{c1.Id, c2.Id}];
+        List<Contract> updated = [SELECT SBQQ__RenewalOpportunity__c FROM Contract WHERE Id IN :new List<Id>{c1.Id, c2.Id}];
         for (Contract c : updated) {
-            System.assertEquals(mockOpp.Id, c.Renewal_Opportunity__c, 'Each contract should point to the renewal opp');
+            System.assertEquals(mockOpp.Id, c.SBQQ__RenewalOpportunity__c, 'Each contract should point to the renewal opp');
         }
     }
 
@@ -98,25 +99,27 @@ private class ContractRenewalSchedulerTest {
         // Sequential mock returns opp1 on first call, opp2 on second.
         // If grouping is working, c1 and c2 must end up on different renewal opps.
         ContractRenewalService.renewApi = new SequentialMockRenewalApi(new List<Id>{ opp1.Id, opp2.Id });
-        ContractRenewalConfig.forTest('Fully Executed');
+        ContractRenewalConfig.forTest('Contracted');
 
         ContractRenewalScheduler.testContracts = new List<Contract>{
-            new Contract(Id = c1.Id, AccountId = a1.Id, Expiration_Date__c = expDate, Renewal_Opportunity__c = null),
-            new Contract(Id = c2.Id, AccountId = a2.Id, Expiration_Date__c = expDate, Renewal_Opportunity__c = null)
+            new Contract(Id = c1.Id, AccountId = a1.Id, Expiration_Date__c = expDate,
+                SBQQ__RenewalOpportunity__c = null, SBQQ__MasterContract__c = false),
+            new Contract(Id = c2.Id, AccountId = a2.Id, Expiration_Date__c = expDate,
+                SBQQ__RenewalOpportunity__c = null, SBQQ__MasterContract__c = false)
         };
 
         Test.startTest();
         new ContractRenewalScheduler().execute(null);
         Test.stopTest();
 
-        Contract updated1 = [SELECT Renewal_Opportunity__c FROM Contract WHERE Id = :c1.Id];
-        Contract updated2 = [SELECT Renewal_Opportunity__c FROM Contract WHERE Id = :c2.Id];
+        Contract updated1 = [SELECT SBQQ__RenewalOpportunity__c FROM Contract WHERE Id = :c1.Id];
+        Contract updated2 = [SELECT SBQQ__RenewalOpportunity__c FROM Contract WHERE Id = :c2.Id];
 
-        System.assertNotEquals(null, updated1.Renewal_Opportunity__c, 'c1 should have a renewal opp');
-        System.assertNotEquals(null, updated2.Renewal_Opportunity__c, 'c2 should have a renewal opp');
+        System.assertNotEquals(null, updated1.SBQQ__RenewalOpportunity__c, 'c1 should have a renewal opp');
+        System.assertNotEquals(null, updated2.SBQQ__RenewalOpportunity__c, 'c2 should have a renewal opp');
         System.assertNotEquals(
-            updated1.Renewal_Opportunity__c,
-            updated2.Renewal_Opportunity__c,
+            updated1.SBQQ__RenewalOpportunity__c,
+            updated2.SBQQ__RenewalOpportunity__c,
             'Two separate accounts must produce two separate renewal opps'
         );
     }
@@ -125,7 +128,7 @@ private class ContractRenewalSchedulerTest {
 
     @isTest
     static void schedule_registersSuccessfully() {
-        ContractRenewalConfig.forTest('Fully Executed');
+        ContractRenewalConfig.forTest('Contracted');
         ContractRenewalScheduler.testContracts = new List<Contract>();
 
         Test.startTest();

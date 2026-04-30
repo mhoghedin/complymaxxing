@@ -4,11 +4,11 @@ private class ContractRenewalQueueableTest {
     private class MockRenewalApi implements IRenewalApi {
         public Id returnOppId;
         MockRenewalApi(Id returnOppId) { this.returnOppId = returnOppId; }
-        public Id renewContracts(List<Id> contractIds) { return returnOppId; }
+        public Id renewContracts(List<Id> contractIds, Id masterContractId) { return returnOppId; }
     }
 
     private class ErrorRenewalApi implements IRenewalApi {
-        public Id renewContracts(List<Id> contractIds) {
+        public Id renewContracts(List<Id> contractIds, Id masterContractId) {
             throw new System.CalloutException('Simulated CPQ failure');
         }
     }
@@ -41,13 +41,14 @@ private class ContractRenewalQueueableTest {
 
         List<List<Id>> groups = new List<List<Id>>{ new List<Id>{ c.Id } };
         List<Id> existingOpps = new List<Id>{ null };
+        List<Id> masterIds = new List<Id>{ c.Id };
 
         Test.startTest();
-        System.enqueueJob(new ContractRenewalQueueable(groups, existingOpps, 0));
+        System.enqueueJob(new ContractRenewalQueueable(groups, existingOpps, masterIds, 0));
         Test.stopTest();
 
-        Contract updated = [SELECT Renewal_Opportunity__c FROM Contract WHERE Id = :c.Id];
-        System.assertEquals(mockOpp.Id, updated.Renewal_Opportunity__c);
+        Contract updated = [SELECT SBQQ__RenewalOpportunity__c FROM Contract WHERE Id = :c.Id];
+        System.assertEquals(mockOpp.Id, updated.SBQQ__RenewalOpportunity__c);
     }
 
     // --- Error path ---
@@ -61,9 +62,10 @@ private class ContractRenewalQueueableTest {
 
         List<List<Id>> groups = new List<List<Id>>{ new List<Id>{ c.Id } };
         List<Id> existingOpps = new List<Id>{ null };
+        List<Id> masterIds = new List<Id>{ c.Id };
 
         Test.startTest();
-        System.enqueueJob(new ContractRenewalQueueable(groups, existingOpps, 0));
+        System.enqueueJob(new ContractRenewalQueueable(groups, existingOpps, masterIds, 0));
         Test.stopTest();
 
         Contract updated = [SELECT Renewal_Error__c FROM Contract WHERE Id = :c.Id];

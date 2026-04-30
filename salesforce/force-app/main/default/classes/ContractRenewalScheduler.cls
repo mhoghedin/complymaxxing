@@ -104,11 +104,12 @@ public class ContractRenewalScheduler implements Schedulable {
 
     @TestVisible
     static List<Contract> queryContracts(ContractRenewalConfig config) {
+        String finalizedStatus = config.finalizedStatus;
         Integer queryLimit = config.queryLimit;
         return [
             SELECT Id, AccountId, Expiration_Date__c, SBQQ__RenewalOpportunity__c, SBQQ__MasterContract__c
             FROM Contract
-            WHERE Contract_Status2__c = 'Contracted'
+            WHERE Contract_Status2__c = :finalizedStatus
             AND SBQQ__RenewalOpportunity__c = null
             AND Expiration_Date__c != null
             LIMIT :queryLimit

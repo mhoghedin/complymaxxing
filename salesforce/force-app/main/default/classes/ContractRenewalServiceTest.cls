@@ -5,7 +5,7 @@ private class ContractRenewalServiceTest {
         public Id returnOppId;
         public List<Id> capturedIds;
         MockRenewalApi(Id returnOppId) { this.returnOppId = returnOppId; }
-        public Id renewContracts(List<Id> contractIds) {
+        public Id renewContracts(List<Id> contractIds, Id masterContractId) {
             capturedIds = contractIds;
             return returnOppId;
         }
@@ -71,11 +71,11 @@ private class ContractRenewalServiceTest {
         ContractRenewalService.renewApi = new MockRenewalApi(mockOpp.Id);
 
         Test.startTest();
-        ContractRenewalService.processGroup(new List<Id>{ c.Id }, null);
+        ContractRenewalService.processGroup(new List<Id>{ c.Id }, null, c.Id);
         Test.stopTest();
 
-        Contract updated = [SELECT Renewal_Opportunity__c FROM Contract WHERE Id = :c.Id];
-        System.assertEquals(mockOpp.Id, updated.Renewal_Opportunity__c);
+        Contract updated = [SELECT SBQQ__RenewalOpportunity__c FROM Contract WHERE Id = :c.Id];
+        System.assertEquals(mockOpp.Id, updated.SBQQ__RenewalOpportunity__c);
     }
 
     // --- processGroup — existing opp, new opp gets re-parented then deleted ---
@@ -90,35 +90,13 @@ private class ContractRenewalServiceTest {
         ContractRenewalService.renewApi = new MockRenewalApi(newOpp.Id);
 
         Test.startTest();
-        ContractRenewalService.processGroup(new List<Id>{ c.Id }, existingOpp.Id);
+        ContractRenewalService.processGroup(new List<Id>{ c.Id }, existingOpp.Id, c.Id);
         Test.stopTest();
 
-        Contract updated = [SELECT Renewal_Opportunity__c FROM Contract WHERE Id = :c.Id];
-        System.assertEquals(existingOpp.Id, updated.Renewal_Opportunity__c, 'Should point to existing opp');
+        Contract updated = [SELECT SBQQ__RenewalOpportunity__c FROM Contract WHERE Id = :c.Id];
+        System.assertEquals(existingOpp.Id, updated.SBQQ__RenewalOpportunity__c, 'Should point to existing opp');
 
         List<Opportunity> shouldBeDeleted = [SELECT Id FROM Opportunity WHERE Id = :newOpp.Id];
         System.assertEquals(0, shouldBeDeleted.size(), 'New opp should have been deleted');
-    }
-
-    // --- getExistingRenewalOpp ---
-
-    @isTest
-    static void getExistingRenewalOpp_returnsFirstNonNull() {
-        Account a = makeAccount('Test');
-        Opportunity o = makeOpp(a.Id);
-
-        List<Contract> contracts = new List<Contract>{
-            new Contract(Renewal_Opportunity__c = null),
-            new Contract(Renewal_Opportunity__c = o.Id)
-        };
-        System.assertEquals(o.Id, ContractRenewalService.getExistingRenewalOpp(contracts));
-    }
-
-    @isTest
-    static void getExistingRenewalOpp_returnsNullWhenNoneSet() {
-        List<Contract> contracts = new List<Contract>{
-            new Contract(Renewal_Opportunity__c = null)
-        };
-        System.assertEquals(null, ContractRenewalService.getExistingRenewalOpp(contracts));
     }
 }

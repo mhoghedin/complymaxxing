@@ -8,7 +8,9 @@
         <members>ContractRenewalConfig</members>
         <members>ContractRenewalScheduler</members>
         <members>QuotePrimaryCleanup</members>
+        <members>QuotePrimaryCleanupTest</members>
         <members>QuotePrimarySync</members>
+        <members>QuotePrimarySyncTest</members>
         <name>ApexClass</name>
     </types>
     <types>
