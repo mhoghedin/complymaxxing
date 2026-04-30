@@ -12,7 +12,7 @@ private class QuotePrimaryCleanupTest {
         return o;
     }
 
-    // No CPQ data in tests — verifies the job chains to QuotePrimarySync without throwing
+    // No CPQ data in tests, verifies the job chains to QuotePrimarySync without throwing
     @isTest
     static void execute_noQuotesFound_completesCleanly() {
         Opportunity o = makeOpp();

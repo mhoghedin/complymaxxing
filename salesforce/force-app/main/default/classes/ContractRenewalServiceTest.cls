@@ -43,7 +43,7 @@ private class ContractRenewalServiceTest {
         Date d1 = Date.today().addYears(1);
         Date d2 = Date.today().addYears(2);
 
-        // In-memory only — no DML needed for pure grouping logic
+        // In-memory only, no DML needed for pure grouping logic
         List<Contract> contracts = new List<Contract>{
             new Contract(AccountId = a1.Id, Expiration_Date__c = d1),
             new Contract(AccountId = a1.Id, Expiration_Date__c = d1),

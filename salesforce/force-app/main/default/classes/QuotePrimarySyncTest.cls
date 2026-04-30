@@ -1,7 +1,7 @@
 @isTest
 private class QuotePrimarySyncTest {
 
-    // No CPQ data in tests — verifies the isEmpty guard and job completes without throwing
+    // No CPQ data in tests, verifies the isEmpty guard and job completes without throwing
     @isTest
     static void execute_noQuoteFound_completesCleanly() {
         Account a = new Account(Name = 'Test');

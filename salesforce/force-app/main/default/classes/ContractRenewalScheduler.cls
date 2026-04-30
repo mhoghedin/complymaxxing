@@ -82,7 +82,7 @@ public class ContractRenewalScheduler implements Schedulable {
             masterContractIds.add(masterId);
         }
 
-        // DML and callouts can't share a transaction — reset here, callout runs in the queueable
+        // DML and callouts can't share a transaction, reset here, callout runs in the queueable
         List<Contract> toReset = new List<Contract>();
         for (Integer i = 0; i < groups.size(); i++) {
             if (existingOpps.get(i) != null) {

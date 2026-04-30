@@ -58,7 +58,7 @@ public class ContractRenewalService {
             );
         }
 
-        // CPQ's QuoteAfter requires a clean transaction; delay lets the calculation settle
+        // CPQ's QuoteAfter requires a clean transaction, delay lets the calculation settle
         try {
             System.schedule('QuotePrimaryCleanup_' + newQuoteId, buildCron(SYNC_DELAY_MINUTES),
                 new QuotePrimaryCleanup(targetOppId, newQuoteId));
@@ -67,7 +67,7 @@ public class ContractRenewalService {
         try {
             delete new Opportunity(Id = newOppId);
         } catch (DmlException e) {
-            // Best-effort — quote is on the right opp regardless
+            // Best-effort, quote is on the right opp regardless
         }
     }
 
