@@ -10,7 +10,7 @@ public class QuotePrimaryCleanup implements Schedulable {
     }
 
     public void execute(SchedulableContext ctx) {
-        // Schedule re-promotion first, if this fails abort rather than leave 0 primaries on the opp
+        // Schedule repromotion first, if this fails abort rather than leave 0 primaries on the opp
         try {
             System.schedule('QuotePrimarySync_' + newQuoteId, buildCron(SYNC_DELAY_MINUTES),
                 new QuotePrimarySync(newQuoteId));

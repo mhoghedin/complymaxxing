@@ -67,7 +67,7 @@ public class ContractRenewalService {
         try {
             delete new Opportunity(Id = newOppId);
         } catch (DmlException e) {
-            // Best-effort, quote is on the right opp regardless
+            // Best effort, quote is on the right opp regardless
         }
     }
 
