@@ -11,8 +11,7 @@ public class QuotePrimaryCleanup implements Schedulable {
 
     public void execute(SchedulableContext ctx) {
         try {
-            // Uncheck ALL primaries on the opp — forces CPQ to re-sync products
-            // when QuotePrimarySync re-promotes the new quote in the next transaction
+            // Uncheck all primaries so CPQ re-syncs products when QuotePrimarySync promotes the new one
             List<SObject> toDemote = Database.query(
                 'SELECT Id FROM SBQQ__Quote__c ' +
                 'WHERE SBQQ__Opportunity2__c = :targetOppId ' +

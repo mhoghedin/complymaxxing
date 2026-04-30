@@ -7,7 +7,7 @@ private class ContractRenewalSchedulerTest {
         public Id renewContracts(List<Id> contractIds, Id masterContractId) { return returnOppId; }
     }
 
-    // Returns a different opp ID on each call — proves groups are processed separately
+    // Returns a different opp per call to verify each group is processed independently
     private class SequentialMockRenewalApi implements IRenewalApi {
         private List<Id> returnIds;
         private Integer callCount = 0;
@@ -38,8 +38,6 @@ private class ContractRenewalSchedulerTest {
         return c;
     }
 
-    // --- No contracts ---
-
     @isTest
     static void execute_noContracts_doesNothing() {
         ContractRenewalConfig.forTest('Contracted');
@@ -50,8 +48,6 @@ private class ContractRenewalSchedulerTest {
         Test.stopTest();
         // No exception = pass
     }
-
-    // --- Single group, first run ---
 
     @isTest
     static void execute_singleGroup_createsRenewal() {
@@ -81,8 +77,6 @@ private class ContractRenewalSchedulerTest {
         }
     }
 
-    // --- Two groups — confirms each group is processed as an independent renewal ---
-
     @isTest
     static void execute_twoGroups_processesEachSeparately() {
         Account a1 = makeAccount();
@@ -96,8 +90,7 @@ private class ContractRenewalSchedulerTest {
         Contract c1 = makeContract(a1.Id, expDate);
         Contract c2 = makeContract(a2.Id, expDate);
 
-        // Sequential mock returns opp1 on first call, opp2 on second.
-        // If grouping is working, c1 and c2 must end up on different renewal opps.
+        // Sequential mock confirms c1 and c2 land on separate renewal opps
         ContractRenewalService.renewApi = new SequentialMockRenewalApi(new List<Id>{ opp1.Id, opp2.Id });
         ContractRenewalConfig.forTest('Contracted');
 
@@ -123,8 +116,6 @@ private class ContractRenewalSchedulerTest {
             'Two separate accounts must produce two separate renewal opps'
         );
     }
-
-    // --- Scheduling ---
 
     @isTest
     static void schedule_registersSuccessfully() {

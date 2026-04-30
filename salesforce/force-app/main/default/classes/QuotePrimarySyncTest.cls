@@ -1,8 +1,7 @@
 @isTest
 private class QuotePrimarySyncTest {
 
-    // CPQ quotes are not available in unit tests, so the SOQL returns no rows.
-    // This verifies the isEmpty guard works and the job completes without throwing.
+    // No CPQ data in tests — verifies the isEmpty guard and job completes without throwing
     @isTest
     static void execute_noQuoteFound_completesCleanly() {
         Account a = new Account(Name = 'Test');
@@ -20,6 +19,6 @@ private class QuotePrimarySyncTest {
             new QuotePrimarySync(fakeQuoteId.Id)
         );
         Test.stopTest();
-        // No exception = pass; CPQ DML is a no-op without managed package data
+        // No exception = pass
     }
 }

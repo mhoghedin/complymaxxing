@@ -58,15 +58,14 @@ public class ContractRenewalService {
             );
         }
 
-        // Schedule cleanup — CPQ's QuoteAfter trigger enforces timing constraints
-        // that require a separate transaction; the delay lets the calculation settle
+        // CPQ's QuoteAfter requires a clean transaction; delay lets the calculation settle
         System.schedule('QuotePrimaryCleanup_' + newQuoteId, buildCron(SYNC_DELAY_MINUTES),
             new QuotePrimaryCleanup(targetOppId, newQuoteId));
 
         try {
             delete new Opportunity(Id = newOppId);
         } catch (DmlException e) {
-            // Best-effort — quote is already on the right opp, contracts will still be stamped
+            // Best-effort — quote is on the right opp regardless
         }
     }
 

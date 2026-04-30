@@ -25,8 +25,6 @@ private class ContractRenewalQueueableTest {
         return c;
     }
 
-    // --- Happy path ---
-
     @isTest
     static void execute_success_setsRenewalOpportunity() {
         Account a = makeAccount();
@@ -50,8 +48,6 @@ private class ContractRenewalQueueableTest {
         Contract updated = [SELECT SBQQ__RenewalOpportunity__c FROM Contract WHERE Id = :c.Id];
         System.assertEquals(mockOpp.Id, updated.SBQQ__RenewalOpportunity__c);
     }
-
-    // --- Error path ---
 
     @isTest
     static void execute_onError_writesRenewalErrorAndContinues() {

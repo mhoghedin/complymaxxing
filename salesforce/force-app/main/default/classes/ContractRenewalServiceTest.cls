@@ -36,8 +36,6 @@ private class ContractRenewalServiceTest {
         return c;
     }
 
-    // --- groupContracts ---
-
     @isTest
     static void groupContracts_groupsByAccountAndDate() {
         Account a1 = makeAccount('Acct 1');
@@ -60,8 +58,6 @@ private class ContractRenewalServiceTest {
         System.assertEquals(2, groups.get(key).size(), 'Expected 2 contracts in a1/d1 group');
     }
 
-    // --- processGroup — first time, no existing opp ---
-
     @isTest
     static void processGroup_firstTime_setsRenewalOppOnContracts() {
         Account a = makeAccount('Test');
@@ -77,8 +73,6 @@ private class ContractRenewalServiceTest {
         Contract updated = [SELECT SBQQ__RenewalOpportunity__c FROM Contract WHERE Id = :c.Id];
         System.assertEquals(mockOpp.Id, updated.SBQQ__RenewalOpportunity__c);
     }
-
-    // --- processGroup — existing opp, new opp gets re-parented then deleted ---
 
     @isTest
     static void processGroup_existingOpp_deletesNewOppAndPointsToExisting() {

@@ -51,7 +51,7 @@ public class ContractRenewalScheduler implements Schedulable {
             List<Id> others = new List<Id>();
             Id masterId = priorMasterByGroupKey.get(key);
 
-            // Slot already-renewed contracts into master/others
+            // Include previously renewed contracts in the merge group
             if (priorContractsByGroupKey.containsKey(key)) {
                 for (Id priorId : priorContractsByGroupKey.get(key)) {
                     if (priorId == masterId) {
@@ -62,7 +62,7 @@ public class ContractRenewalScheduler implements Schedulable {
                 }
             }
 
-            // Slot new contracts in, detecting master if not already known
+            // Add new contracts, identifying master if not already found
             for (Contract c : groupContracts) {
                 if (c.SBQQ__MasterContract__c) {
                     if (masterId == null) masterId = c.Id;
@@ -82,9 +82,7 @@ public class ContractRenewalScheduler implements Schedulable {
             masterContractIds.add(masterId);
         }
 
-        // Reset renewal state for remerge groups — must happen here (DML before callout
-        // in the same transaction is not allowed, so this runs in the scheduler transaction
-        // and the callout runs later in the queueable transaction)
+        // DML and callouts can't share a transaction — reset here, callout runs in the queueable
         List<Contract> toReset = new List<Contract>();
         for (Integer i = 0; i < groups.size(); i++) {
             if (existingOpps.get(i) != null) {
