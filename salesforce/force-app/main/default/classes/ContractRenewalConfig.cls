@@ -17,6 +17,11 @@ public class ContractRenewalConfig {
             );
         }
         ContractRenewalConfig__mdt record = records[0];
+        if (String.isBlank(record.Finalized_Status__c)) {
+            throw new ContractRenewalException(
+                'ContractRenewalConfig.Default: Finalized_Status__c must not be blank.'
+            );
+        }
         ContractRenewalConfig cfg = new ContractRenewalConfig();
         cfg.finalizedStatus = record.Finalized_Status__c;
         cfg.queryLimit = record.Query_Limit__c != null ? (Integer) record.Query_Limit__c : 2000;

@@ -59,8 +59,10 @@ public class ContractRenewalService {
         }
 
         // CPQ's QuoteAfter requires a clean transaction; delay lets the calculation settle
-        System.schedule('QuotePrimaryCleanup_' + newQuoteId, buildCron(SYNC_DELAY_MINUTES),
-            new QuotePrimaryCleanup(targetOppId, newQuoteId));
+        try {
+            System.schedule('QuotePrimaryCleanup_' + newQuoteId, buildCron(SYNC_DELAY_MINUTES),
+                new QuotePrimaryCleanup(targetOppId, newQuoteId));
+        } catch (Exception ignored) {}
 
         try {
             delete new Opportunity(Id = newOppId);

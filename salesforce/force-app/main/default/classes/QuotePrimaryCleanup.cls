@@ -10,8 +10,16 @@ public class QuotePrimaryCleanup implements Schedulable {
     }
 
     public void execute(SchedulableContext ctx) {
+        // Schedule re-promotion first — if this fails, abort rather than leave 0 primaries on the opp
         try {
-            // Uncheck all primaries so CPQ re-syncs products when QuotePrimarySync promotes the new one
+            System.schedule('QuotePrimarySync_' + newQuoteId, buildCron(SYNC_DELAY_MINUTES),
+                new QuotePrimarySync(newQuoteId));
+        } catch (Exception ignored) {
+            return;
+        }
+
+        // Uncheck all primaries so CPQ re-syncs products when QuotePrimarySync promotes the new one
+        try {
             List<SObject> toDemote = Database.query(
                 'SELECT Id FROM SBQQ__Quote__c ' +
                 'WHERE SBQQ__Opportunity2__c = :targetOppId ' +
@@ -21,11 +29,6 @@ public class QuotePrimaryCleanup implements Schedulable {
                 q.put('SBQQ__Primary__c', false);
             }
             if (!toDemote.isEmpty()) update toDemote;
-        } catch (Exception ignored) {}
-
-        try {
-            System.schedule('QuotePrimarySync_' + newQuoteId, buildCron(SYNC_DELAY_MINUTES),
-                new QuotePrimarySync(newQuoteId));
         } catch (Exception ignored) {}
     }
 
