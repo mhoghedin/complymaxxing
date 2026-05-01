@@ -21,14 +21,19 @@ public class ContractRenewalScheduler implements Schedulable {
         Map<String, List<Id>> priorContractsByGroupKey = new Map<String, List<Id>>();
         Map<String, Id> priorMasterByGroupKey = new Map<String, Id>();
 
-        for (Contract c : [
-            SELECT Id, AccountId, Expiration_Date__c, SBQQ__RenewalOpportunity__c, SBQQ__MasterContract__c
-            FROM Contract
-            WHERE AccountId IN :accountIds
-            AND Expiration_Date__c IN :expirationDates
-            AND SBQQ__RenewalOpportunity__c != null
-        ]) {
-            String key = c.AccountId + '_' + String.valueOf(c.Expiration_Date__c);
+        Set<String> selectFields = new Set<String>{
+            'Id', 'AccountId', 'Expiration_Date__c',
+            'SBQQ__RenewalOpportunity__c', 'SBQQ__MasterContract__c'
+        };
+        selectFields.addAll(config.groupingFields);
+        String existingSoql = 'SELECT ' + String.join(new List<String>(selectFields), ', ')
+            + ' FROM Contract'
+            + ' WHERE AccountId IN :accountIds'
+            + ' AND Expiration_Date__c IN :expirationDates'
+            + ' AND SBQQ__RenewalOpportunity__c != null';
+
+        for (Contract c : (List<Contract>) Database.query(existingSoql)) {
+            String key = ContractRenewalService.buildGroupKey(c, config.groupingFields);
             if (!existingOppByGroupKey.containsKey(key)) {
                 existingOppByGroupKey.put(key, c.SBQQ__RenewalOpportunity__c);
                 priorContractsByGroupKey.put(key, new List<Id>());
@@ -39,7 +44,8 @@ public class ContractRenewalScheduler implements Schedulable {
             }
         }
 
-        Map<String, List<Contract>> grouped = ContractRenewalService.groupContracts(contracts);
+        Map<String, List<Contract>> grouped =
+            ContractRenewalService.groupContracts(contracts, config.groupingFields);
 
         List<List<Id>> groups = new List<List<Id>>();
         List<Id> existingOpps = new List<Id>();
@@ -104,13 +110,17 @@ public class ContractRenewalScheduler implements Schedulable {
     static List<Contract> queryContracts(ContractRenewalConfig config) {
         String finalizedStatus = config.finalizedStatus;
         Integer queryLimit = config.queryLimit;
-        return [
-            SELECT Id, AccountId, Expiration_Date__c, SBQQ__RenewalOpportunity__c, SBQQ__MasterContract__c
-            FROM Contract
-            WHERE Contract_Status2__c = :finalizedStatus
-            AND SBQQ__RenewalOpportunity__c = null
-            AND Expiration_Date__c != null
-            LIMIT :queryLimit
-        ];
+        Set<String> selectFields = new Set<String>{
+            'Id', 'AccountId', 'Expiration_Date__c',
+            'SBQQ__RenewalOpportunity__c', 'SBQQ__MasterContract__c'
+        };
+        selectFields.addAll(config.groupingFields);
+        String soql = 'SELECT ' + String.join(new List<String>(selectFields), ', ')
+            + ' FROM Contract'
+            + ' WHERE Contract_Status2__c = :finalizedStatus'
+            + ' AND SBQQ__RenewalOpportunity__c = null'
+            + ' AND Expiration_Date__c != null'
+            + ' LIMIT :queryLimit';
+        return (List<Contract>) Database.query(soql);
     }
 }

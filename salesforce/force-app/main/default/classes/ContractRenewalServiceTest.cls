@@ -43,7 +43,6 @@ private class ContractRenewalServiceTest {
         Date d1 = Date.today().addYears(1);
         Date d2 = Date.today().addYears(2);
 
-        // In memory only, no DML needed for pure grouping logic
         List<Contract> contracts = new List<Contract>{
             new Contract(AccountId = a1.Id, Expiration_Date__c = d1),
             new Contract(AccountId = a1.Id, Expiration_Date__c = d1),
@@ -51,11 +50,43 @@ private class ContractRenewalServiceTest {
             new Contract(AccountId = a2.Id, Expiration_Date__c = d1)
         };
 
-        Map<String, List<Contract>> groups = ContractRenewalService.groupContracts(contracts);
+        List<String> fields = new List<String>{ 'AccountId', 'Expiration_Date__c' };
+        Map<String, List<Contract>> groups = ContractRenewalService.groupContracts(contracts, fields);
 
         System.assertEquals(3, groups.size(), 'Expected 3 distinct groups');
         String key = a1.Id + '_' + d1;
         System.assertEquals(2, groups.get(key).size(), 'Expected 2 contracts in a1/d1 group');
+    }
+
+    @isTest
+    static void groupContracts_segmentFieldSplitsWithinSameAccountAndDate() {
+        Account a = makeAccount('Acct');
+        Date d = Date.today().addYears(1);
+
+        List<Contract> contracts = new List<Contract>{
+            new Contract(AccountId = a.Id, Expiration_Date__c = d, Renewal_Segment__c = 'Commercial'),
+            new Contract(AccountId = a.Id, Expiration_Date__c = d, Renewal_Segment__c = 'International'),
+            new Contract(AccountId = a.Id, Expiration_Date__c = d, Renewal_Segment__c = 'Commercial')
+        };
+
+        List<String> fields = new List<String>{ 'AccountId', 'Expiration_Date__c', 'Renewal_Segment__c' };
+        Map<String, List<Contract>> groups = ContractRenewalService.groupContracts(contracts, fields);
+
+        System.assertEquals(2, groups.size(), 'Expected 2 groups split by segment');
+        String commKey = a.Id + '_' + d + '_Commercial';
+        System.assertEquals(2, groups.get(commKey).size(), 'Expected 2 Commercial contracts');
+    }
+
+    @isTest
+    static void buildGroupKey_returnsFieldsJoinedByUnderscore() {
+        Account a = makeAccount('Acct');
+        Date d = Date.today();
+        Contract c = new Contract(AccountId = a.Id, Expiration_Date__c = d, Renewal_Segment__c = 'Provider');
+
+        String key = ContractRenewalService.buildGroupKey(c,
+            new List<String>{ 'AccountId', 'Expiration_Date__c', 'Renewal_Segment__c' });
+
+        System.assertEquals(a.Id + '_' + d + '_Provider', key);
     }
 
     @isTest

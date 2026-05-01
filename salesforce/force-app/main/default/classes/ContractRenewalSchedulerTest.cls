@@ -118,6 +118,47 @@ private class ContractRenewalSchedulerTest {
     }
 
     @isTest
+    static void execute_sameAccountDateDifferentSegment_createsSeparateRenewals() {
+        Account a = makeAccount();
+        Opportunity opp1 = makeOpp(a.Id);
+        Opportunity opp2 = makeOpp(a.Id);
+        Date expDate = Date.today().addYears(1);
+
+        Contract c1 = makeContract(a.Id, expDate);
+        Contract c2 = makeContract(a.Id, expDate);
+
+        ContractRenewalConfig.forTest(
+            'Contracted',
+            new List<String>{ 'AccountId', 'Expiration_Date__c', 'Renewal_Segment__c' }
+        );
+        ContractRenewalService.renewApi = new SequentialMockRenewalApi(new List<Id>{ opp1.Id, opp2.Id });
+
+        ContractRenewalScheduler.testContracts = new List<Contract>{
+            new Contract(Id = c1.Id, AccountId = a.Id, Expiration_Date__c = expDate,
+                Renewal_Segment__c = 'Commercial',
+                SBQQ__RenewalOpportunity__c = null, SBQQ__MasterContract__c = false),
+            new Contract(Id = c2.Id, AccountId = a.Id, Expiration_Date__c = expDate,
+                Renewal_Segment__c = 'International',
+                SBQQ__RenewalOpportunity__c = null, SBQQ__MasterContract__c = false)
+        };
+
+        Test.startTest();
+        new ContractRenewalScheduler().execute(null);
+        Test.stopTest();
+
+        Contract updated1 = [SELECT SBQQ__RenewalOpportunity__c FROM Contract WHERE Id = :c1.Id];
+        Contract updated2 = [SELECT SBQQ__RenewalOpportunity__c FROM Contract WHERE Id = :c2.Id];
+
+        System.assertNotEquals(null, updated1.SBQQ__RenewalOpportunity__c, 'Commercial contract must have a renewal opp');
+        System.assertNotEquals(null, updated2.SBQQ__RenewalOpportunity__c, 'International contract must have a renewal opp');
+        System.assertNotEquals(
+            updated1.SBQQ__RenewalOpportunity__c,
+            updated2.SBQQ__RenewalOpportunity__c,
+            'Different segments must produce separate renewal opps even on the same account and date'
+        );
+    }
+
+    @isTest
     static void schedule_registersSuccessfully() {
         ContractRenewalConfig.forTest('Contracted');
         ContractRenewalScheduler.testContracts = new List<Contract>();

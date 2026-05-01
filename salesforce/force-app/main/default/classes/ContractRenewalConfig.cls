@@ -1,11 +1,15 @@
 public class ContractRenewalConfig {
     public String finalizedStatus { get; private set; }
     public Integer queryLimit { get; private set; }
+    public List<String> groupingFields { get; private set; }
+
+    private static final List<String> DEFAULT_GROUPING_FIELDS =
+        new List<String>{ 'AccountId', 'Expiration_Date__c' };
 
     public static ContractRenewalConfig load() {
         if (mockInstance != null) return mockInstance;
         List<ContractRenewalConfig__mdt> records = [
-            SELECT Finalized_Status__c, Query_Limit__c
+            SELECT Finalized_Status__c, Query_Limit__c, Grouping_Fields__c
             FROM ContractRenewalConfig__mdt
             WHERE DeveloperName = 'Default'
             LIMIT 1
@@ -25,6 +29,9 @@ public class ContractRenewalConfig {
         ContractRenewalConfig cfg = new ContractRenewalConfig();
         cfg.finalizedStatus = record.Finalized_Status__c;
         cfg.queryLimit = record.Query_Limit__c != null ? (Integer) record.Query_Limit__c : 2000;
+        cfg.groupingFields = String.isBlank(record.Grouping_Fields__c)
+            ? DEFAULT_GROUPING_FIELDS
+            : record.Grouping_Fields__c.split(';');
         return cfg;
     }
 
@@ -32,9 +39,15 @@ public class ContractRenewalConfig {
 
     @TestVisible
     static ContractRenewalConfig forTest(String finalizedStatus) {
+        return forTest(finalizedStatus, DEFAULT_GROUPING_FIELDS);
+    }
+
+    @TestVisible
+    static ContractRenewalConfig forTest(String finalizedStatus, List<String> groupingFields) {
         ContractRenewalConfig cfg = new ContractRenewalConfig();
         cfg.finalizedStatus = finalizedStatus;
         cfg.queryLimit = 2000;
+        cfg.groupingFields = groupingFields;
         mockInstance = cfg;
         return cfg;
     }

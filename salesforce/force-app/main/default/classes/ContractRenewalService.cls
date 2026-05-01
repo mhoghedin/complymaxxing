@@ -3,10 +3,21 @@ public class ContractRenewalService {
 
     public class ContractRenewalException extends Exception {}
 
-    public static Map<String, List<Contract>> groupContracts(List<Contract> contracts) {
+    public static String buildGroupKey(SObject record, List<String> groupingFields) {
+        List<String> parts = new List<String>();
+        for (String field : groupingFields) {
+            parts.add(String.valueOf(record.get(field)));
+        }
+        return String.join(parts, '_');
+    }
+
+    public static Map<String, List<Contract>> groupContracts(
+        List<Contract> contracts,
+        List<String> groupingFields
+    ) {
         Map<String, List<Contract>> groups = new Map<String, List<Contract>>();
         for (Contract c : contracts) {
-            String key = c.AccountId + '_' + String.valueOf(c.Expiration_Date__c);
+            String key = buildGroupKey(c, groupingFields);
             if (!groups.containsKey(key)) {
                 groups.put(key, new List<Contract>());
             }
